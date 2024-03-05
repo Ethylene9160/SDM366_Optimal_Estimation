@@ -171,5 +171,8 @@ cython_debug/
 *.doc
 *.docx
 
-#loca
+#local
 local/
+
+#assignment with current index should not be sumbit
+current_ass/
