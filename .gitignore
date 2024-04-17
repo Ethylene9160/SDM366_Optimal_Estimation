@@ -166,6 +166,7 @@ cython_debug/
 
 # pdf files
 *.pdf
+!readme.pdf
 
 # word files
 *.doc
@@ -176,3 +177,4 @@ local/
 
 #assignment with current index should not be sumbit
 current_ass/
+project1/
