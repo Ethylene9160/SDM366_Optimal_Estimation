@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.linalg as la
-import control as control
+# import control as control
 import matplotlib.pyplot as plt
 
 def getSlideKN(A, B, Q, R, N, nx, nu):
@@ -9,6 +9,7 @@ def getSlideKN(A, B, Q, R, N, nx, nu):
     for j in range(N):
         K = la.inv(R + B.T @ P @ B) @ B.T @ P @ A
         P = Q + A.T @ P @ A - A.T @ P @ B @ K
+    K = la.inv(R + B.T @ P @ B) @ B.T @ P @ A
     return K
 
 def getKN(A, B, Q, R, N, nx, nu):
@@ -24,11 +25,24 @@ def getKN(A, B, Q, R, N, nx, nu):
     :return: 反馈增益矩阵KN
     '''
     P = np.zeros((nx,nx,N))
-    K = np.zeros((nu,nx,N))
-    for j in range(N):
-        K[:,:,j] = la.inv(R + B.T @ P[:,:,j] @ B) @ B.T @ P[:,:,j] @ A
-        P[:,:,j+1] = Q + A.T @ P[:,:,j] @ A - A.T @ P[:,:,j] @ B @ K[:,:,j]
-    return K[:,:,N-1]
+    # K = np.zeros((nu,nx,N))
+    for j in range(N-1):
+        P[:, :, j + 1] = Q + A.T @ P[:, :, j] @ A - A.T @ P[:, :, j] @ B @ la.inv(R + B.T @ P[:, :, j] @ B) @ B.T @ P[:,
+                                                                                                                    :,
+                                                                                                                    j] @ A
+
+    KN = la.inv(R + B.T @ P[:, :, N - 1] @ B) @ B.T @ P[:, :, N - 1] @ A
+    return KN
+
+def testKN(A, B, nx, nu, Q, R, Nr):
+    P = np.zeros((nx, nx, Nr))
+    for j in range(Nr - 1):
+        P[:,:,j+1] = Q + A.T @P[:,:,j] @ A - A.T @P[:,:,j] @ B @ la.inv(R + B.T @ P[:, :, j] @ B) @ B.T @ P[:, :, j] @ A
+
+    Pstar = P[:, :, Nr - 1]
+    Kstar = la.inv(R + B.T @ Pstar @ B) @ B.T @ Pstar @ A
+
+    return Kstar
 
 def lqrfunc(A, B, nx, nu, Q, R, Nr):
     P = np.zeros((nx,nx,Nr))
@@ -41,12 +55,15 @@ def lqrfunc(A, B, nx, nu, Q, R, Nr):
     Kstar = la.inv(R + B.T @ Pstar @ B) @ B.T @ Pstar @ A
 
     print('use lib to solve:')
-    R1, R2, R3 = control.dlqr(A,B,Q,R)
-    print(R2)
+    # R1, R2, R3 = control.dlqr(A,B,Q,R)
+    # print(R2)
 
     return Pstar, Kstar
 
-if __name__ == '__main__':
+
+
+# 张巍老师的代码高仿版
+def zw():
     A = np.mat('1.95,-0.025,-1.6;16,1.1,-3.2;0.425,0.1875,0.3')
     B=np.mat('0 1 0;1 1 1').T
     nx = 3
@@ -57,19 +74,17 @@ if __name__ == '__main__':
     Nr = 20
     P = np.zeros((nx,nx,Nr))
 
-    # for j in range(Nr-1):
-    #     P[:,:,j+1] = Q + A.T @P[:,:,j] @ A - A.T @P[:,:,j] @ B @ la.inv(R + B.T @ P[:, :, j] @ B) @ B.T @ P[:, :, j] @ A
-    # print('manual solution:')
-    # print(P[:,:,Nr-1])
-    #
-    # Pstar = P[:,:,Nr-1]
-    # Kstar = la.inv(R + B.T @ Pstar @ B) @ B.T @ Pstar @ A
-    #
-    # print('use lib to solve:')
-    # R1, R2, R3 = control.dlqr(A,B,Q,R)
-    # print(R2)
-    Pstar, Kstar = lqrfunc(A, B, nx, nu, Q, R, Nr)
+    for j in range(Nr-1):
+        P[:,:,j+1] = Q + A.T @P[:,:,j] @ A - A.T @P[:,:,j] @ B @ la.inv(R + B.T @ P[:, :, j] @ B) @ B.T @ P[:, :, j] @ A
+    print('manual solution:')
+    print(P[:,:,Nr-1])
 
+    Pstar = P[:,:,Nr-1]
+    Kstar = la.inv(R + B.T @ Pstar @ B) @ B.T @ Pstar @ A
+    print('use lib to solve:')
+    # R1, R2, R3 = control.dlqr(A,B,Q,R)
+    # print('Use library: ',R2)
+    print('Kstar:', Kstar)
     # new
     N = 15
     x = np.mat(np.zeros((nx,N)))
@@ -137,4 +152,8 @@ if __name__ == '__main__':
     plt.plot(time,norm_unew)
     plt.title('norm_u')
     plt.show()
+
+if __name__ == '__main__':
+    zw()
+
 
