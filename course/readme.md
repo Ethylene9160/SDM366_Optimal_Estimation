@@ -37,7 +37,7 @@ $$
 
 
 
-现在以Path-planning问题，作为一个例子，来引入对这个问题的解答。
+现在以Path-planning问题，作为一个例子，来引入对这个问题的解答。（注意，原来课件中，$a_3$到$a_4$的距离是5，在这里为了稍后方便讲解，我将其改为了6）
 
 ![image-path](readme.assets/path.png)
 
@@ -73,7 +73,7 @@ $$
 
 我们使用万能的双重for循环，遍历每两个点之间的距离，逐次更新即可。
 
-首先，我们定义一个矩阵，用来表示两点之间的最短距离：
+首先，我们定义一个矩阵，用来表示**相邻两点间的距离**：
 
 ```python
 costMatrix = np.array([
@@ -163,19 +163,70 @@ def valueIter(Vfunc, costMatrix, xf):
         for j in range(n):
             if i == j: # 起点和目标点相同，跳过，此时的J默认为最大值，这样可以避免选择最短路径时选到自己，进入死循环。
                 continue
-            # a_i经过a_j到达目标点a_xf的代价为：
+            # a_i经过a_j到达目标点a_xf的代价为：a_j到a_xf的代价加上a_i到a_j的代价（距离）
             J[j] = Vfunc[j]+costMatrix[j,i]
 		
         Vnex[i] = np.min(J)# a_i到a_xf最近的时候的cost。即i到xf的最短距离。
         mustar[i] = np.argmin(J) # a_i到a_xf最近的时候，下一步的下标。
-    # print("Vnex:\n", Vnex)
-    # print("mustar:\n", mustar)
     return Vnex, mustar
 ```
 
 这样，我们通过迭代，就可以知道怎么走了。例如，经过第一轮迭代后：
 
+```python
+Vnex=	[inf,inf, 6, 0, 2, inf, inf, 5]
+mustar=	[-1, -1,  3, 3, 3, -1,  -1,  3] # mustar[i]代表从第i点以最短的姿态走到目标点的下一步的点的下标。例如mustar[2]=3表示的是a[2]以最短路径走到a[3]的下一步需要走a[3]。
+```
 
+假设我们迭代四次（这样相当于最多可以走四步），让我们来试试效果。
+
+```python
+if __name__ == "__main__":
+    N = 4 # Max steps
+    n = 8 # size of the graph (cost matrix)
+    xf = 3 # final place index, we want to go to a_4, so the index is 3.
+
+    # step cost function
+    # V[xi] represents the minimum distance from a_xi to a_xf
+    # i.e. V[0] represents the minimum distance from a_0 to a_3
+    V = np.inf * np.ones(n)
+    V[xf] = 0 # a_xf to a_xf: distance is 0. else, are inf.
+    path = []
+    lastStep = 0
+    steps = -1 * np.ones(n)
+    x0 = -1*np.zeros(N)
+    for i in range(N-1):
+        V, steps = pl.valueIter(V, pl.costMatrix, xf)
+    # start to go, from a_0.
+    path.append(lastStep)
+    for i in range(N-1):
+        target = int(steps[lastStep])
+        path.append(target)
+        lastStep = target
+    print(path)
+```
+
+result: `0, 1, 7, 3`
+
+它实现的，就是如表3-1的过程。例如，经过几轮迭代后，代价函数和下一步的走向为：
+
+第一轮循环已经展示过了。
+
+第二轮循环：
+
+```python
+Vnex=	[inf,8, 6, 0, 2, 5, 5, 7]
+mustar=	[-1, 7, 3, 3, 3, 4, 7, 3] 
+```
+
+第三轮循环：
+
+```PYTHON
+Vnex=	[12,8, 6, 0, 2, 5, 5, 7]
+mustar=	[1, 7, 3, 3, 3, 4, 7, 3] # 例如，mustar[0]表示a[0]到a[3]最近的话，下一个点是a[1].
+```
+
+我们找到了几个点之后，我们的起点是$a_1$（a[0]），然后下一步根据`mustar[0]=1`将会是$a_2$（a[1]），再下一步根据`mustar[1]=7`得知是$a_8$（a[7]），最后根据`mustar[7]=3`得知下一步是$a_4$（a[3]），到达终点。
 
 # LQR
 
