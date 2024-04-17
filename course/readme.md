@@ -321,6 +321,9 @@ u=-(R+B^TP_NB)^{-1}B^TP_NAz=-K_Nz\\K_N=(R+B^TP_NB)^{-1}B^TP_NA\tag{4-9}
 $$
 
 tips: (4-8)可以也被表示为：（不然代码太长了，物理意义））））
+$$
+    P_{j+1}=Q+A^TP_jA-A^TP_jBK_j\tag{4-8}
+$$
 
 ## Coding
 
