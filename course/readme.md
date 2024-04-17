@@ -80,7 +80,7 @@ J_N(x_0,u)=g(x_N)+\sum_{k=0}^{N-1}l(x_k,u_k)\\
 x_{k+1}=f(x_k,u_k)\\
 x_k\in X
 $$
-定义：$V_0(z)=g(z)$（瞎写一个就行，比如我们这里可以定义$V_0(z)=[\infty,\infty,\infty,0,\infty,\infty,\infty,\infty]$​）
+定义：$V_0(z)=g(z)$（瞎写一个就行，比如可以定义$V_0(z)=[\infty,\infty,\infty,0,\infty,\infty,\infty,\infty]$​）
 
 然后，逐次更新：
 $$
