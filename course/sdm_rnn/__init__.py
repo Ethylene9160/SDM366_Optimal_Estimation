@@ -18,7 +18,7 @@ class MyRNN(nn.Module):
         self.hidden_size = hidden_size
         self.n_layers = n_layers
 
-        self.rnn = nn.RNN(input_size, hidden_size, n_layers, batch_first=True)
+        self.rnn = nn.RNN(input_size, hidden_size, n_layers, bias = False, batch_first=True)
         self.fc = nn.Linear(hidden_size, output_size)
         # set bias to False
         self.fc.bias.data.fill_(0)
@@ -57,6 +57,8 @@ if __name__ == '__main__':
     plt.plot(y.data.numpy())
     plt.show()
 
+    data_rnn = y.data.numpy()
+
 
     # initialize the hidden state
     # setup the dimensions of the hidden state
@@ -69,7 +71,9 @@ if __name__ == '__main__':
     w_ux = mnn.rnn.weight_ih_l0.data.numpy()
 
     # begin to simulate
+    # uhat = np.mat(u.reshape(-1, seq_length))
     xhat = x0_tensor.numpy().reshape(hidden_size, 1)
+    # xhat = np.mat(u.reshape(-1,seq_length))
     for k in range(seq_length):
         if k == 0:
             x[:, k] = np.tanh(w_xx@xhat+w_ux@u[:,k])
@@ -77,6 +81,18 @@ if __name__ == '__main__':
         else:
             x[:, k] = np.tanh(w_xx@x[:,k-1]+w_ux@u[:,k])
             y[:,k] = w_xy@x[:,k]
+        # if k == 0:
+        #     x[:, k] = np.tanh(w_xx @ xhat + w_ux @ uhat[:, k])
+        #     y[:, k] = w_xy @ x[:, k]
+        # else:
+        #     x[:, k] = np.tanh(w_xx @ x[:, k - 1] + w_ux @ uhat[:, k])
+        #     y[:, k] = w_xy @ x[:, k]
 
     plt.plot(y.T)
+    plt.show()
+
+    plt.figure()
+    plt.plot(data_rnn)
+    plt.plot(y.T)
+    plt.legend(['RNN','mRNN'])
     plt.show()
