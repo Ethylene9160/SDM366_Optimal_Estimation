@@ -178,4 +178,5 @@ local/
 #assignment with current index should not be sumbit
 current_ass/
 !project1/src/robotics/trajectory.py
+!trajectory.py
 project1/
