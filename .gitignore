@@ -179,4 +179,5 @@ local/
 current_ass/
 !project1/src/robotics/trajectory.py
 !trajectory.py
+!new_trajectory.py
 project1/
