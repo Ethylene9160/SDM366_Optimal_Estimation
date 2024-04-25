@@ -144,23 +144,6 @@ def calParam(w):
     l1 = (w[1])/m2/l2
     m1 = (w[3])/l1 - m2
     return m1, m2, l1, l2
-
-def getHw(theta1, theta2, d_theta1, d_theta2,dd_theta1, dd_theta2, g):
-    return np.array([
-        [dd_theta1, dd_theta2, math.cos(theta2) * (2 * dd_theta1 + dd_theta2) - math.sin(theta2) * (
-                    2 * d_theta1 * d_theta2 + d_theta2 ** 2), g * math.cos(theta1), g * math.cos(theta1 + theta2)],
-
-        [0, dd_theta1+dd_theta2, math.cos(theta2) * dd_theta1 + math.sin(theta2) * d_theta1 ** 2, 0, g*math.cos(theta1+theta2)]
-    ])
-
-def calParamw(w):
-    w = w.reshape(-1)
-    l2 = w[1]/w[4]
-    m2 = w[4]/l2
-    l1 = w[2]/l2/m2
-    m1 = w[3]/l1-m2
-    return m1, m2, l1, l2
-
 def plot_robot_arm_dynamics(num_frames, x1s, x2s, L1, L2, step=50):
     for i in range(0, num_frames, step):
         plt.figure(figsize=(8, 6))
