@@ -95,6 +95,12 @@ class Droping:
 
 
     def forward(self, steps):
+        '''
+        This is a function for forward simulation,
+        simulate the free-falling situation of the 2R manipulatar.
+        :param steps:
+        :return: sequences of values of angle and angular speed, theta1, theta2, omega1, omega2.
+        '''
         x1s = []
         x2s = []
         x3s = []
@@ -108,53 +114,6 @@ class Droping:
             # x3s.append(self.l1*math.cos(self.x1)+self.l2*math.cos(self.x1+self.x2))
             # x4s.append(self.l1*math.sin(self.x1)+self.l2*math.sin(self.x1+self.x2))
         return x1s, x2s, x3s, x4s
-
-    def forwardNew(self, steps, T):
-        x = np.array([[self.x1], [self.x2], [self.x3], [self.x4]])
-
-    def forward_parameters(self, steps, T):
-        theta1s = []
-        theta2s = []
-        d_theta1s = []
-        d_theta2s = []
-        d_d_theta1s = []
-        d_d_theta2s = []
-        tau1s = []
-        tau2s = []
-        for i in range(steps):
-            self._dstep()
-            theta1s.append(self.x1)
-            theta2s.append(self.x2)
-            d_theta1s.append(self.x3)
-            d_theta2s.append(self.x4)
-            d_d_theta1s.append(self.tau_theta[0])
-            d_d_theta2s.append(self.tau_theta[1])
-            tau1s.append(self.tau_theta[0])
-            tau2s.append(self.tau_theta[1])
-        return theta1s, theta2s, d_theta1s, d_theta2s, d_d_theta1s, d_d_theta2s, tau1s, tau2s
-
-# todo
-class LeastSquare:
-    def __init__(self):
-        self.H = None
-        self.theta = None
-        self.error = None
-        self.flag = False
-
-    def fit(self, y, H):
-        self.H = H
-        self.theta = np.linalg.inv(H.T @ H) @ H.T @ y
-        self.error = np.sum((y - H @ self.theta) ** 2)
-        self.flag = True
-        return self.theta, self.error
-
-    def predict(self, H):
-        if not self.flag:
-            raise ValueError('No model has been fitted yet.')
-        return H @ self.theta
-
-    def transformH(self, x):
-        return np.array([[1, x, x**2, x**3]])
 
 def plot_robot_arm_dynamics(num_frames, x1s, x2s, L1, L2, step=50):
     for i in range(0, num_frames, step):

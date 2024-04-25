@@ -36,6 +36,12 @@ class Identifacation:
         self.tau_theta = np.array([[2], [1]])
 
     def forward(self, steps, T):
+        '''
+        forward simulation for identification. apply the guven torques and store the simulating results.
+        :param steps:
+        :param T:
+        :return:sequences of values for identification parameters: theta1, theta2, omega1, omega2, alpha1, alpha2, tau1, tau2
+        '''
         fg = 0
         t1 = []
         t2 = []
@@ -222,16 +228,6 @@ if __name__ == '__main__':
 
     print('rank of which: ', np.linalg.matrix_rank(H.T@H))
     print('H^T*H:', H.T@H)
-
-    # 岭回归的实现
-    lambda_ = 1e-5  # 正则化参数
-    I = np.eye(H.shape[1])  # 单位矩阵，维度与 H 的列数相同
-
-    # 计算岭回归解
-    w = np.linalg.inv(H.T @ H + lambda_ * I) @ H.T @ tau
-
-    theta0 = np.ones(H.shape[1]).astype(np.float64)
-    w = minimize(cost, theta0, args=(tau, H)).x # optimizer
 
     w = ls(H, tau) # least square
     print('w:', w)
