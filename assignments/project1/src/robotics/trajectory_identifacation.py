@@ -106,13 +106,13 @@ def cost(theta, tau, H):
 
 
 def getH(theta1, theta2, d_theta1, d_theta2,dd_theta1, dd_theta2, g):
-    # return np.array(
-    #     [
-    #         [dd_theta1,dd_theta1,math.cos(theta2)*(2*dd_theta1+dd_theta2)-math.sin(theta2)*(2*d_theta1*d_theta2+d_theta2**2),dd_theta1+dd_theta2,g*math.cos(theta1),g*math.cos(theta1),g*math.cos(theta1+theta2)]
-    #         ,
-    #         [0,0,math.cos(theta2)*dd_theta1+math.sin(theta2)*d_theta1**2,dd_theta1+dd_theta2,0,0,g*math.cos(theta1+theta2)]
-    #     ]
-    # )
+    return np.array(
+        [
+            [dd_theta1,dd_theta1,math.cos(theta2)*(2*dd_theta1+dd_theta2)-math.sin(theta2)*(2*d_theta1*d_theta2+d_theta2**2),dd_theta1+dd_theta2,g*math.cos(theta1),g*math.cos(theta1),g*math.cos(theta1+theta2)]
+            ,
+            [0,0,math.cos(theta2)*dd_theta1+math.sin(theta2)*d_theta1**2,dd_theta1+dd_theta2,0,0,g*math.cos(theta1+theta2)]
+        ]
+    )
 
     return np.array(
         [
@@ -134,11 +134,11 @@ def lsw(H, y):
 
 def calParam(w):
     w = w.reshape(-1)
-    # l1 = (w[0])/(w[4])
-    # m1 = (w[4])/l1
-    # m2 = (w[5])/l1
-    # l2 = (w[6])/m2
-    # return m1, m2, l1, l2
+    l1 = (w[0])/(w[4])
+    m1 = (w[4])/l1
+    m2 = (w[5])/l1
+    l2 = (w[6])/m2
+    return m1, m2, l1, l2
     l2 = (w[2])/(w[4])
     m2 = (w[4])/l2
     l1 = (w[1])/m2/l2
@@ -165,8 +165,8 @@ def plot_robot_arm_dynamics(num_frames, x1s, x2s, L1, L2, step=50):
         clear_output(wait=True)
 
 if __name__ == '__main__':
-    steps = 1000
-    T = 0.002
+    steps = 2000
+    T = 0.001
     time = np.arange(0, steps*T, T)
 
     dropping = Identifacation(T, theta1 = 0, theta2 =math.pi / 2)
@@ -198,9 +198,9 @@ if __name__ == '__main__':
 
     H = None
     tau = None
-    start_point = 200
+    start_point = 10
     for i in range(20):
-        target = 30*i+start_point
+        target = 100*i+start_point
         hi = getH(t1[target], t2[target], dt1[target], dt2[target], ddt1[target], ddt2[target], 9.81)
         # taui = np.array([[ddt1[start_point]], [ddt2[start_point]]])
         taui = np.array([[tau1[target]], [tau2[target]]])
