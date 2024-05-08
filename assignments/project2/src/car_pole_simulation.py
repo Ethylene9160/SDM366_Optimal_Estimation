@@ -1,5 +1,4 @@
 import numpy as np
-import numpy.linalg as la
 import mujoco.viewer
 import time
 
@@ -10,8 +9,9 @@ PATH = 'mujoco_file/cart_pole.xml'
 if __name__ == '__main__':
 
     ############# MY CODE BEGIN #############
-    x0 = np.array([[0],[0.1],[0],[0]])
-    T=0.002
+    delta_theta = 0.25
+    x0 = np.array([[0],[delta_theta],[0],[0]])
+    T=0.005
     Q=3*np.eye(4)
     R=np.eye(1)
     print('shape of R: ', R)
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     # create viewer
     with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
         start = time.time()
-        data.qpos[pole_id] = np.pi - 0.1  # set initial position (you can try using initial state = 0)
+        data.qpos[pole_id] = np.pi - delta_theta  # set initial position (you can try using initial state = 0)
         while viewer.is_running():
             step_start = time.time()
 
