@@ -12,9 +12,12 @@ if __name__ == '__main__':
     delta_theta = 0.15
     x0 = np.array([[0],[delta_theta],[0],[0]])
     T=0.005
+
+    # set the Q and R matrix
     Q=3*np.eye(4)
     R=np.eye(1)
-    print('shape of R: ', R)
+
+    # init the pendulum
     pendulum = tools.pendulum.Pendulum(x=x0, T = T)
     ############ END MY CODE #############
 
@@ -38,9 +41,12 @@ if __name__ == '__main__':
             step_start = time.time()
 
             ################### MY CODE BEGIN #############
+            # update the state of the pendulum
             xi,ui=pendulum.step_in()
-            data.qpos[pole_id] = float(np.pi)-xi[1][0]
-            data.qpos[cart_id] = xi[0][0]
+
+            # directly set the position of the cart and pole
+            data.qpos[pole_id] = float(np.pi)-xi[1][0] # set the angle
+            data.qpos[cart_id] = xi[0][0] # set the position
             ################### END MY CODE ###############
             mujoco.mj_step(model, data)
             with viewer.lock():

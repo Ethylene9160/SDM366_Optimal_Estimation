@@ -37,25 +37,36 @@ class Pendulum:
         self.R = R
 
     def init_state(self, x=np.array([[0.0],[0.0],[0.0],[0.0]]), u=np.array([[0.0]])):
+        '''
+        set the init state.
+        :param x: init state of the pendulum
+        :param u: init input of the pendulum
+        :return: no return
+        '''
         self.x = x.copy()
         self.u = u.copy()
         self.zs = []
         self.thetas = []
 
     def updataK(self, epochs=500):
+        '''
+        update the K matrix, which is the feedback matrix of the LQR controller
+        :param epochs: iteration times for the LQR algorithm
+        :return: no return. The K matrix will be updated.
+        '''
         # self.K = control.dlqr(self.A, self.B, self.Q, self.R)[0]
         self.K = lqr.getDiscreteKN(self.A, self.B, self.Q, self.R, epochs, 4, 1)
 
-    def free_falling(self):
-        self.x = self.A@self.x
-        self.zs.append(self.x[0][0])
-        self.thetas.append(float(np.pi)-self.x[1][0])
-        return self.x.copy(), self.u.copy()
+    # def free_falling(self):
+    #     self.x = self.A@self.x
+    #     self.zs.append(self.x[0][0])
+    #     self.thetas.append(float(np.pi)-self.x[1][0])
+    #     return self.x.copy(), self.u.copy()
 
     def step_in(self):
         '''
         update the state of the pendulum, in one step. The return value will be the new state of the pendulum.
-        :return: state matrix of x
+        :return: state matrix of x, and input u
         '''
         # print('shape of K: ', self.K.shape)
         # print('shape of u: ', self.u.shape)
@@ -66,4 +77,9 @@ class Pendulum:
         return self.x.copy(), self.u.copy()
 
     def get_history(self):
+        '''
+        Get the history of the center position z and angle theta of the pendulum, from the time when you call 'init_state()' function,
+        or you first initialize the object.
+        :return: np array of the position set z, and the angle set theta.
+        '''
         return np.array(self.zs), np.array(self.thetas)
