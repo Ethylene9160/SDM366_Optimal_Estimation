@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import time
 
 # load the model from
-model = mujoco.MjModel.from_xml_path("test.xml")
+model = mujoco.MjModel.from_xml_path("mujoco_file/test.xml")
 data = mujoco.MjData(model)
 
 # get the joint ids
@@ -17,10 +17,10 @@ print("CartSlider", cart_id)
 print("PolePin", pole_id)
 
 # system parameters
-g = -10
+g = 9.81  # gravity
 l = 0.5  # length of pole rod
 m = 1.0  # mass of pole
-M = 5.0  # mass of cart
+M = 10.0  # mass of cart
 
 # TODO: here is where you should code something
 u = 0
