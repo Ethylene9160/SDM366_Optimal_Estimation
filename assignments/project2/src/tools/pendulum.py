@@ -5,7 +5,7 @@ from . import lqr_discrete as lqr
 # import control
 
 class Pendulum:
-    def __init__(self, T = 0.001, Q = np.eye(4), R = np.eye(1), x=np.array([[0.0],[0.0],[0.0],[0.0]]), u=np.array([[0.0]])):
+    def __init__(self, T = 0.001, Q = np.eye(4), R = np.eye(1), x=np.array([[0.0],[0.0],[0.0],[0.0]]), u=np.array([[0.0]]), epochs = 5000):
         self.T = T
         self.A = np.array([
             [1,     0,      T,     0],
@@ -23,7 +23,7 @@ class Pendulum:
         print('shape of Q: ', self.Q.shape)
         print('shape of R: ', self.R.shape)
         self.K = None
-        self.updataK()
+        self.updataK(epochs = epochs)
         print('SHAPE of K: ', self.K.shape)
         self.x = x.copy()
         self.u = u.copy()
@@ -42,9 +42,9 @@ class Pendulum:
         self.zs = []
         self.thetas = []
 
-    def updataK(self, epochs=50000):
+    def updataK(self, epochs=500):
         # self.K = control.dlqr(self.A, self.B, self.Q, self.R)[0]
-        self.K = lqr.getSlideKN(self.A, self.B, self.Q, self.R, epochs, 4, 1)
+        self.K = lqr.getDiscreteKN(self.A, self.B, self.Q, self.R, epochs, 4, 1)
 
     def free_falling(self):
         self.x = self.A@self.x

@@ -1,7 +1,7 @@
 from IPython.core.display_functions import clear_output
 from matplotlib import pyplot as plt
 import numpy as np
-def plot_robot_arm_dynamics(num_frames, zs, thetas, L1, L2, step=50):
+def plot_robot_arm_dynamics(num_frames, zs, thetas, L1, L2, step=50, T=0.001):
     for i in range(0, len(zs), step):
         plt.figure(figsize=(8, 6))
         joint_x = L1/2+zs[i]
@@ -17,7 +17,7 @@ def plot_robot_arm_dynamics(num_frames, zs, thetas, L1, L2, step=50):
         plt.ylim([-L1 - L2 , L1 + L2 ])
         plt.xlabel('X Position (meters)')
         plt.ylabel('Y Position (meters)')
-        plt.title(f'2R Robotic Arm Movement at t={i * 0.001:.2f} seconds')
+        plt.title(f'Incersed Pendulum at t={i * T:.2f} seconds')
         plt.grid(True)
         plt.show()
         clear_output(wait=True)

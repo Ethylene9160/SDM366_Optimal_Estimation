@@ -9,9 +9,9 @@ PATH = 'mujoco_file/cart_pole.xml'
 if __name__ == '__main__':
 
     ############# MY CODE BEGIN #############
-    delta_theta = 0.25
+    delta_theta = 0.15
     x0 = np.array([[0],[delta_theta],[0],[0]])
-    T=0.01
+    T=0.005
     Q=3*np.eye(4)
     R=np.eye(1)
     print('shape of R: ', R)
