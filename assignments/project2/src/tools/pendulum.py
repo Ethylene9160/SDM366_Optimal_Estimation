@@ -5,19 +5,37 @@ from . import lqr_discrete as lqr
 # import control
 
 class Pendulum:
-    def __init__(self, T = 0.001, Q = np.eye(4), R = np.eye(1), x=np.array([[0.0],[0.0],[0.0],[0.0]]), u=np.array([[0.0]]), epochs = 5000):
+    def __init__(self,
+                 T = 0.001,
+                 Q = np.eye(4),
+                 R = np.eye(1),
+                 x=np.array([[0.0],[0.0],[0.0],[0.0]]),
+                 u=np.array([[0.0]]),
+                 mc=10,
+                 mp=1,
+                 l=0.5,
+                 g=9.81,
+                 epochs = 5000):
         self.T = T
+        # self.A = np.array([
+        #     [1,     0,      T,     0],
+        #     [0,     1,      0,     -T],
+        #     [0, -9.801*T,   1,     0],
+        #     [0,-21.582*T,   0,     1]
+        # ])
         self.A = np.array([
-            [1,     0,      T,     0],
-            [0,     1,      0,     -T],
-            [0, -9.801*T,   1,     0],
-            [0,-21.582*T,   0,     1]
+            [1, 0, T, 0],
+            [0, 1, 0, -T],
+            [0, -mp*g/mc * T, 1, 0],
+            [0, -(mc+mp)*g/l/mc * T, 0, 1]
         ])
-        self.B = np.array([[0.0],[0.0],[0.1*T],[0.2*T]])
+        # self.B = np.array([[0.0],[0.0],[0.1*T],[0.2*T]])
+        self.B = np.array([[0.0], [0.0], [1/mc * T], [1/l/mc * T]])
 
         self.Q = Q.copy()
         self.R = R.copy()
-
+        print('A: ', self.A)
+        print('B: ', self.B)
         print('shape of A: ', self.A.shape)
         print('shape of B: ', self.B.shape)
         print('shape of Q: ', self.Q.shape)
