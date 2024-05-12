@@ -8,10 +8,15 @@ PATH = 'mujoco_file/cart_pole.xml'
 
 if __name__ == '__main__':
 
+    # load the model from
+    model = mujoco.MjModel.from_xml_path(PATH)
+    data = mujoco.MjData(model)
+
     ############# MY CODE BEGIN #############
     delta_theta = 0.15
     x0 = np.array([[0],[delta_theta],[0],[0]])
-    T=0.005
+    T=model.opt.timestep
+    print('T:', T)
 
     # set the Q and R matrix
     Q=3*np.eye(4)
@@ -21,9 +26,6 @@ if __name__ == '__main__':
     pendulum = tools.pendulum.Pendulum(x=x0, T = T)
     ############ END MY CODE #############
 
-    # load the model from
-    model = mujoco.MjModel.from_xml_path(PATH)
-    data = mujoco.MjData(model)
 
     # get the joint ids
     cart_id = 0
@@ -42,11 +44,14 @@ if __name__ == '__main__':
 
             ################### MY CODE BEGIN #############
             # update the state of the pendulum
+            # data.ctrl[0] = -(pendulum.K*pendulum.x)[0][0]
             xi,ui=pendulum.step_in()
 
             # directly set the position of the cart and pole
             data.qpos[pole_id] = float(np.pi)-xi[1][0] # set the angle
             data.qpos[cart_id] = xi[0][0] # set the position
+            # print(data.qpos)
+            # print(data.ctrl)
             ################### END MY CODE ###############
             mujoco.mj_step(model, data)
             with viewer.lock():
