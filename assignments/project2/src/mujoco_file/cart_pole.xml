@@ -4,7 +4,7 @@
     <default class="unused"/>
   </default>
   <asset>
-    <texture name="grid" type="2d" builtin="checker" rgb1="0.1 0.2 0.3" rgb2="0.2 0.3 0.4" width="512" height="512"/>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.5 0.5 0.5" rgb2="0.325 0.318 0.412" width="512" height="512"/>
     <material name="grid" class="unused" texture="grid" texrepeat="1 1" texuniform="true" reflectance="0.2"/>
   </asset>
   <worldbody>

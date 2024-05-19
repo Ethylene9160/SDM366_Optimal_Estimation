@@ -1,8 +1,7 @@
 import math
-
+import time
 import numpy as np
 import mujoco.viewer
-import time
 
 import tools.pendulum
 
@@ -17,15 +16,15 @@ if __name__ == '__main__':
     ############# MY CODE BEGIN #############
     delta_theta = 0.15 #initial x2
     x0 = np.array([[0],[delta_theta],[0],[0]])
-    T=model.opt.timestep
+    T = model.opt.timestep
     print('T:', T)
 
     # set the Q and R matrix
-    Q=3*np.eye(4)
-    R=np.eye(1)
+    Q = 3 * np.eye(4)
+    R = np.eye(1)
 
     # init the pendulum
-    pendulum = tools.pendulum.Pendulum(x=x0,Q=Q,R=R, T = T)
+    pendulum = tools.pendulum.Pendulum(x=x0, Q=Q, R=R, T=T)
     ############ END MY CODE #############
 
 

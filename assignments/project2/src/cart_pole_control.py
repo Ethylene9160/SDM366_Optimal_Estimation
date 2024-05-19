@@ -1,8 +1,8 @@
 import math
-import cv2
+import time
+# import cv2
 import numpy as np
 import mujoco.viewer
-import time
 
 import tools.pendulum
 
@@ -21,10 +21,10 @@ if __name__ == '__main__':
 
     # set the Q and R matrix. Feel free to config it!
     R=np.eye(1)
-    Q=np.diag([5,1,5,1])
+    Q=np.diag([5, 1, 5, 1])
 
     # init the pendulum
-    pendulum = tools.pendulum.Pendulum(x=x0,Q=Q,R=R, T = T)
+    pendulum = tools.pendulum.Pendulum(x=x0, Q=Q, R=R, T=T)
     ############ END MY CODE #############
 
     # get the joint ids
