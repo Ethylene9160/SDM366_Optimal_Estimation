@@ -1,6 +1,12 @@
 # 233
 ## Q1
 
+Assuming that:
+$$
+x=[z,\pi-\theta,\dot z, \dot \theta]
+$$
+
+
 $\dot x_1$:
 $$
 \dot x_1=x_3
@@ -44,7 +50,7 @@ $$
 \frac{\partial f_2}{\partial x_4}=-1\\
 \frac{\partial f_2}{\partial u}=0
 $$
-f3 todo：关于x2的求导求错了！
+f3 
 $$
 \frac{\partial f_3}{\partial x_1}&=0\\
 %%%%%%% f3 %%%%%%%%
@@ -72,7 +78,7 @@ $$
 (m_p\sin x_2L x_4)\\
 \frac{\partial f_3}{\partial u}&=\frac {1}{m_c+m_p\sin^2(x_2)}
 $$
-f4: todo:关于x2的求导求错了
+f4: 
 $$
 \frac{\partial f_4}{\partial x_1}&=0\\
 
@@ -125,13 +131,27 @@ $$
 $$
 That is, according to the question, 
 $$
-\hat A = \begin{bmatrix}
+\hat A =
+\begin{bmatrix}
+0&0&1&0\\
+0&0&0&-1\\
+0&-\frac{m_pg}{m_c}&0&0\\
+0&-\frac{(m_c+m_p)g}{Lm_c}&0&0 
+\end{bmatrix}
+=
+\begin{bmatrix}
 0&0&1&0\\
 0&0&0&-1\\
 0&-0.981&0&0\\
 0&-21.582&0&0 
 \end{bmatrix}\\
-\hat B=\begin{bmatrix}
+\hat B=
+\begin{bmatrix}
+0\\0\\
+\frac{1}{m_c}\\
+\frac{1}{Lm_c}
+\end{bmatrix}=
+\begin{bmatrix}
 0\\0\\
 0.1\\
 0.2
