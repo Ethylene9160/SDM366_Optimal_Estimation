@@ -13,7 +13,7 @@ if __name__ == '__main__':
     data = mujoco.MjData(model)
 
     ############# MY CODE BEGIN #############
-    delta_theta = 0.15
+    delta_theta = 0.15 #initial x2
     x0 = np.array([[0],[delta_theta],[0],[0]])
     T=model.opt.timestep
     print('T:', T)
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     R=np.eye(1)
 
     # init the pendulum
-    pendulum = tools.pendulum.Pendulum(x=x0, T = T)
+    pendulum = tools.pendulum.Pendulum(x=x0,Q=Q,R=R, T = T)
     ############ END MY CODE #############
 
 
@@ -34,7 +34,6 @@ if __name__ == '__main__':
     print("CartSlider", cart_id)
     print("PolePin", pole_id)
 
-
     # create viewer
     with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
         start = time.time()
@@ -43,15 +42,11 @@ if __name__ == '__main__':
             step_start = time.time()
 
             ################### MY CODE BEGIN #############
-            # update the state of the pendulum
-            # data.ctrl[0] = -(pendulum.K*pendulum.x)[0][0]
             xi,ui=pendulum.step_in()
 
             # directly set the position of the cart and pole
             data.qpos[pole_id] = float(np.pi)-xi[1][0] # set the angle
             data.qpos[cart_id] = xi[0][0] # set the position
-            # print(data.qpos)
-            # print(data.ctrl)
             ################### END MY CODE ###############
             mujoco.mj_step(model, data)
             with viewer.lock():

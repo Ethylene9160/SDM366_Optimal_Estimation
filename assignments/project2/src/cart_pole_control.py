@@ -1,5 +1,5 @@
 import math
-
+import cv2
 import numpy as np
 import mujoco.viewer
 import time
@@ -9,7 +9,6 @@ import tools.pendulum
 PATH = 'mujoco_file/cart_pole.xml'
 
 if __name__ == '__main__':
-
     # load the model from
     model = mujoco.MjModel.from_xml_path(PATH)
     data = mujoco.MjData(model)
@@ -20,19 +19,14 @@ if __name__ == '__main__':
     T=model.opt.timestep
     print('T:', T)
 
-    # set the Q and R matrix3
-    # Q=1*np.eye(4)
+    # set the Q and R matrix. Feel free to config it!
     R=np.eye(1)
     Q=np.diag([5,1,5,1])
-    print('Q: ',Q)
 
     # init the pendulum
     pendulum = tools.pendulum.Pendulum(x=x0,Q=Q,R=R, T = T)
     ############ END MY CODE #############
 
-    # max step config
-    max_step = 100
-    step_cnt = 0
     # get the joint ids
     cart_id = 0
     pole_id = 1
@@ -45,18 +39,8 @@ if __name__ == '__main__':
     with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
         start = time.time()
         data.qpos[pole_id] = np.pi - delta_theta  # set initial position (you can try using initial state = 0)
+
         while viewer.is_running():
-            step_cnt += 1
-            if step_cnt == max_step:
-                print('max step reached')
-                # print position and angular
-                print('cart position:', data.qpos[cart_id])
-                print('pole angular:', math.pi-data.qpos[pole_id])
-            elif step_cnt == int(max_step/2):
-                print('half step reached')
-                # print position and angular
-                print('cart position:', data.qpos[cart_id])
-                print('pole angular:', math.pi-data.qpos[pole_id])
             step_start = time.time()
 
             ################### MY CODE BEGIN #############
