@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import mujoco.viewer
 import time
@@ -45,7 +47,7 @@ if __name__ == '__main__':
             xi,ui=pendulum.step_in()
 
             # directly set the position of the cart and pole
-            data.qpos[pole_id] = float(np.pi)-xi[1][0] # set the angle
+            data.qpos[pole_id] = math.pi-xi[1][0] # set the angle
             data.qpos[cart_id] = xi[0][0] # set the position
             ################### END MY CODE ###############
             mujoco.mj_step(model, data)
