@@ -37,3 +37,11 @@ pip install hydra-core==1.3.2
 
 作者提供了三个瞎（）（）训练的模型供您进行测试。名字叫`ethy_official_model?.pth`。您可以根据您的需要来玩耍。
 需要注意的是，这里的训练方法非常简单（GPT写的），所以效果不太行。请根据您的情况，在`tools\init.py`中重写代理和训练的函数。
+
+## 其它
+
+如果您遇到了mujoco-py的冲突，请卸载mujoco-py：
+
+```bash
+pip uninstall mujoco-py
+```
