@@ -25,17 +25,23 @@ class Agent:
             action_space_dims (int): Dimension of the action space.
         """
         self.policy_network = Policy_Network(obs_space_dims, action_space_dims)
+        self.optimizer = torch.optim.Adam(self.policy_network.parameters(), lr=1e-3)
 
-    def sample_action(self, state: np.ndarray) -> float:
+    def sample_action(self, state: np.ndarray) -> tuple[float, torch.Tensor]:
         """Samples an action according to the policy network given the current state.
 
         Args:
             state (np.ndarray): The current state observation from the environment.
 
         Returns:
-            float: The action sampled from the policy distribution.
+            tuple[float, torch.Tensor]: The action sampled from the policy distribution and its log probability.
         """
-        return np.array([0])  # Return the action
+        state = torch.tensor(state, dtype=torch.float32)
+        mean, std = self.policy_network(state)
+        dist = Normal(mean, std)
+        action = dist.sample()
+        log_prob = dist.log_prob(action)
+        return action.item(), log_prob
 
     def update(self, rewards, log_probs):
         """Updates the policy network using the REINFORCE algorithm based on collected rewards and log probabilities.
@@ -44,8 +50,20 @@ class Agent:
             rewards (list): Collected rewards from the environment.
             log_probs (list): Log probabilities of the actions taken.
         """
-        # The actual implementation of the REINFORCE update will be done here.
-        pass
+        discounted_rewards = []
+        cumulative_reward = 0
+        for reward in reversed(rewards):
+            cumulative_reward = reward + 0.99 * cumulative_reward
+            discounted_rewards.insert(0, cumulative_reward)
+        discounted_rewards = torch.tensor(discounted_rewards)
+        log_probs = torch.stack(log_probs)
+
+        loss = -log_probs * discounted_rewards
+        loss = loss.sum()
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
 
 
 class Policy_Network(nn.Module):
@@ -59,8 +77,10 @@ class Policy_Network(nn.Module):
             action_space_dims (int): Dimension of the action space.
         """
         super().__init__()
-        # Define the neural network layers here
-        pass
+        self.fc1 = nn.Linear(obs_space_dims, 128)
+        self.fc2 = nn.Linear(128, 128)
+        self.mean = nn.Linear(128, action_space_dims)
+        self.std = nn.Linear(128, action_space_dims)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Predicts parameters of the action distribution given the state.
@@ -71,8 +91,12 @@ class Policy_Network(nn.Module):
         Returns:
             tuple[torch.Tensor, torch.Tensor]: Predicted mean and standard deviation of the action distribution.
         """
-        # Implement the prediction logic here
-        return torch.tensor(0.0), torch.tensor(1.0)  # Example placeholders
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        mean = self.mean(x)
+        std = torch.exp(self.std(x))
+        return mean, std
+
 
 
 def init_mujoco(model_path):
@@ -110,38 +134,43 @@ def init_mujoco(model_path):
 
 
 if __name__ == "__main__":
-    xml_path = "/assignments/finpro/RL_train_pendulum_ethy_version/inverted_pendulum.xml"
+    xml_path = "inverted_pendulum.xml"
 
     model, data = init_mujoco(xml_path)
-    # window = init_glfw()
-    #
-    # if window:
-    #     obs_space_dims = model.nq
-    #     action_space_dims = model.nu
-    #     agent = Agent(obs_space_dims, action_space_dims)
-    #
-    #     total_num_episodes = int(5e3)
-    #
-    #     for episode in range(total_num_episodes):
-    #         mujoco.mj_step(model, data)
-    #         render(window, model, data)
-    #
-    #     glfw.terminate()
 
+    obs_space_dims = model.nq
+    action_space_dims = model.nu
+    agent = Agent(obs_space_dims, action_space_dims)
 
     # create viewer
     with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
-        start = time.time()
+        total_num_episodes = int(5e3)
+        episode = 0
 
-        while viewer.is_running():
-            step_start = time.time()
-            mujoco.mj_step(model, data)
-            with viewer.lock():
-                viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = int(data.time % 2)
-            viewer.sync()
+        while viewer.is_running() and episode < total_num_episodes:
+            rewards = []
+            log_probs = []
+            done = False
+            data.time = 0
 
-            time_until_next_step = model.opt.timestep - (time.time() - step_start)
-            # print(time_until_next_step)
-            if time_until_next_step > 0:
-                time.sleep(time_until_next_step)
+            while not done:
+                step_start = time.time()
+                state = data.qpos
+                action, log_prob = agent.sample_action(state)
+                data.ctrl[0] = action
+                mujoco.mj_step(model, data)
+                reward = - (data.qpos[1] ** 2 + 0.1 * data.qvel[1] ** 2 + 0.001 * action ** 2)  # Example reward function
+                rewards.append(reward)
+                log_probs.append(log_prob)
+                done = data.time > 2  # Example condition to end episode
 
+                with viewer.lock():
+                    viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = int(data.time % 2)
+                viewer.sync()
+
+                time_until_next_step = model.opt.timestep - (time.time() - step_start)
+                if time_until_next_step > 0:
+                    time.sleep(time_until_next_step)
+
+            agent.update(rewards, log_probs)
+            episode += 1

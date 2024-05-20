@@ -436,3 +436,77 @@ if __name__ == '__main__':
 ![lqr2](readme.assets/lqr2.png)
 
 可以注意到，$Q$调大之后，对$x$的惩罚越大，导致$x$的偏移更小。
+
+# Kalman Filter
+
+<p align='center'><font size=4><b>Notation</b></font></p>
+
+|            | 含义 | 备注 |
+| :--------: | :--: | :--: |
+| $\omega_k$ | 过程噪声 | 服从**高斯分布** |
+| $v_k$      | 观测噪声 | 服从**高斯分布** |
+| $p_k$      |      |      |
+|$Q_k$|||
+
+状态方程：
+$$
+x_{k+1}=Ax_k+Bu_k+w_k\\
+y_k=Cx_k+v_k\tag{5-1}
+$$
+
+其中，$w_k$代表了过程噪声（process noise），$v_k$代表了观测噪声（measurement noise）。
+通常，我们的假设是，$w_k$和$v_k$是高斯白噪声，且它们之间是不相关的。
+
+卡尔曼滤波器的解：
+
+$$
+\hat x_k = E(x_k|y_0,y_1,...,y_k)\tag{5-2}
+$$
+
+我们的目标是，求取$\hat x_k$的最佳估计值。
+
+ ## Condition Expectation
+
+
+
+## Condition Covarience
+
+
+
+## Step
+
+
+
+### Step 1-Prediction
+
+Predict $\hat x_{k+1|Y=y_k},~P_{k+1|Y=y_k}$, using $\hat x_k,~P_k$​
+
+
+
+
+
+### Step 2-Measurement Update
+
+According to: $\hat x_{k+1}=E()$​
+
+
+
+### Step 3-Update P
+
+
+
+
+
+## Coding
+
+基于此，在python中的code如下：
+
+```python
+class Kalman:
+    def __init__
+```
+
+
+
+
+

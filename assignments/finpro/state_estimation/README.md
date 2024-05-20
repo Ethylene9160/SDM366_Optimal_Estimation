@@ -64,7 +64,7 @@ You need first derive the State Space Model of this biped robot. It might be hel
 
 ## Windows requirements
 
-windows下，您需要手动确保统一的版本号。
+如果您在windows下，您需要手动确保相互兼容的版本号。
 
 python version: 3.9.18
 
@@ -76,3 +76,8 @@ pip install hydra-core ==  1.3.2
 ```
 
 或者，请查阅 `requirements.txt`.
+
+## Windows config
+
+前往`biped_robot_sim.py`, 在第34行修改文件夹地址，设置为`state_estimation`所在地址。
+如果您的文件结构和我一样，您可以直接使用我设置的相对地址。

@@ -7,6 +7,8 @@ import torch.nn as nn
 from torch.distributions.normal import Normal
 import mujoco
 import glfw
+import cv2
+import time
 
 
 class Agent:
@@ -23,17 +25,23 @@ class Agent:
             action_space_dims (int): Dimension of the action space.
         """
         self.policy_network = Policy_Network(obs_space_dims, action_space_dims)
+        self.optimizer = torch.optim.Adam(self.policy_network.parameters(), lr=1e-3)
 
-    def sample_action(self, state: np.ndarray) -> float:
+    def sample_action(self, state: np.ndarray) -> tuple[float, torch.Tensor]:
         """Samples an action according to the policy network given the current state.
 
         Args:
             state (np.ndarray): The current state observation from the environment.
 
         Returns:
-            float: The action sampled from the policy distribution.
+            tuple[float, torch.Tensor]: The action sampled from the policy distribution and its log probability.
         """
-        return np.array([0])  # Return the action
+        state = torch.tensor(state, dtype=torch.float32)
+        mean, std = self.policy_network(state)
+        dist = Normal(mean, std)
+        action = dist.sample()
+        log_prob = dist.log_prob(action)
+        return action.item(), log_prob
 
     def update(self, rewards, log_probs):
         """Updates the policy network using the REINFORCE algorithm based on collected rewards and log probabilities.
@@ -42,8 +50,20 @@ class Agent:
             rewards (list): Collected rewards from the environment.
             log_probs (list): Log probabilities of the actions taken.
         """
-        # The actual implementation of the REINFORCE update will be done here.
-        pass
+        discounted_rewards = []
+        cumulative_reward = 0
+        for reward in reversed(rewards):
+            cumulative_reward = reward + 0.99 * cumulative_reward
+            discounted_rewards.insert(0, cumulative_reward)
+        discounted_rewards = torch.tensor(discounted_rewards)
+        log_probs = torch.stack(log_probs)
+
+        loss = -log_probs * discounted_rewards
+        loss = loss.sum()
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
 
 
 class Policy_Network(nn.Module):
@@ -57,8 +77,10 @@ class Policy_Network(nn.Module):
             action_space_dims (int): Dimension of the action space.
         """
         super().__init__()
-        # Define the neural network layers here
-        pass
+        self.fc1 = nn.Linear(obs_space_dims, 128)
+        self.fc2 = nn.Linear(128, 128)
+        self.mean = nn.Linear(128, action_space_dims)
+        self.std = nn.Linear(128, action_space_dims)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Predicts parameters of the action distribution given the state.
@@ -69,8 +91,11 @@ class Policy_Network(nn.Module):
         Returns:
             tuple[torch.Tensor, torch.Tensor]: Predicted mean and standard deviation of the action distribution.
         """
-        # Implement the prediction logic here
-        return torch.tensor(0.0), torch.tensor(1.0)  # Example placeholders
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        mean = self.mean(x)
+        std = torch.exp(self.std(x))
+        return mean, std
 
 
 def init_mujoco(model_path):
@@ -91,20 +116,18 @@ def init_glfw(width=640, height=480):
 
 
 def render(window, mujoco_model, mujoco_data):
-    while not glfw.window_should_close(window):
-        mujoco.mj_step(mujoco_model, mujoco_data)
+    width, height = glfw.get_framebuffer_size(window)
+    scene = mujoco.MjvScene(mujoco_model, maxgeom=1000)
+    context = mujoco.MjrContext(mujoco_model, mujoco.mjtFontScale.mjFONTSCALE_150)
 
-        viewport = mujoco.MjrRect(0, 0, 640, 480)
-        scene = mujoco.MjvScene(mujoco_model, maxgeom=1000)
-        context = mujoco.MjrContext(mujoco_model, mujoco.mjtFontScale.mjFONTSCALE_150)
+    mujoco.mjv_updateScene(mujoco_model, mujoco_data, mujoco.MjvOption(), None, mujoco.MjvCamera(), mujoco.mjtCatBit.mjCAT_ALL, scene)
+    mujoco.mjr_render(mujoco.MjrRect(0, 0, width, height), scene, context)
 
-        mujoco.mjv_updateScene(mujoco_model, mujoco_data, mujoco.MjvOption(), None, mujoco.MjvCamera(),
-                               mujoco.mjtCatBit.mjCAT_ALL, scene)
-        mujoco.mjr_render(viewport, scene, context)
-
-        glfw.swap_buffers(window)
-        glfw.poll_events()
-    glfw.terminate()
+    buffer = np.zeros((height, width, 3), dtype=np.uint8)
+    mujoco.mjr_readPixels(buffer, None, mujoco.MjrRect(0, 0, width, height), context)
+    buffer = np.flipud(buffer)
+    cv2.imshow("MuJoCo Simulation", buffer)
+    cv2.waitKey(1)
 
 
 if __name__ == "__main__":
@@ -121,7 +144,23 @@ if __name__ == "__main__":
         total_num_episodes = int(5e3)
 
         for episode in range(total_num_episodes):
-            mujoco.mj_step(model, data)
-            render(window, model, data)
+            rewards = []
+            log_probs = []
+            done = False
+            data.time = 0
+
+            while not done:
+                state = data.qpos
+                action, log_prob = agent.sample_action(state)
+                data.ctrl[0] = action
+                mujoco.mj_step(model, data)
+                reward = - (data.qpos[1] ** 2 + 0.1 * data.qvel[1] ** 2 + 0.001 * action ** 2)  # Example reward function
+                rewards.append(reward)
+                log_probs.append(log_prob)
+                done = data.time > 20  # Example condition to end episode
+
+                render(window, model, data)
+
+            agent.update(rewards, log_probs)
 
         glfw.terminate()
