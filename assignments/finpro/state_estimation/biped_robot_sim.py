@@ -31,10 +31,10 @@ from omegaconf import DictConfig
 
 # Set the directory for the simulation environment's source code
 SOURCE_DIR = (
-    r"D:\Sustech\2024Spring\SDM366_Optimal_Control_and_Estimation\assignments\assignments\finpro\state_estimation"  # TODO: change to your own project dir
+    "../state_estimation"  # TODO: change to your own project dir
 )
 # Flag to indicate whether to use the simulation environment
-USE_SIM = True  # TODO: you should change to False to implement your own state estimator
+USE_SIM = False  # change to True to use original controller provided by professor.
 
 
 class MuJoCoSim:

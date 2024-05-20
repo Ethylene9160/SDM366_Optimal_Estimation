@@ -4,7 +4,7 @@
     <default class="unused"/>
   </default>
   <asset>
-    <texture name="grid" type="2d" builtin="checker" rgb1="0.5 0.5 0.5" rgb2="0.325 0.318 0.412" width="512" height="512"/>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.1 0.2 0.3" rgb2="0.2 0.3 0.4" width="512" height="512"/>
     <material name="grid" class="unused" texture="grid" texrepeat="1 1" texuniform="true" reflectance="0.2"/>
   </asset>
   <worldbody>
@@ -17,12 +17,12 @@
              (or near to zero since sdformat does not allow exact zeroes
              for inertia values). -->
       <inertial pos="0 0 0" mass="5" diaginertia="0.00000000001 0.00000000001 0.00000000001"/>
-      <geom name="cart_visual" class="unused" type="box" contype="0" conaffinity="0" group="0" size="0.12 0.06 0.06" pos="0 0 0" euler="0 -0 0" rgba="1 0.5843 0.7843 0.5"/>
+      <geom name="cart_visual" class="unused" type="box" contype="0" conaffinity="0" group="0" size="0.12 0.06 0.06" pos="0 0 0" euler="0 -0 0"/>
       <joint name="CartSlider" class="unused" type="slide" pos="0 0 0" axis="1 0 0"/>
       <body name="Pole" pos="0 0 -0.5" euler="0 -0 0">
         <inertial pos="0 0 0" mass="1" diaginertia="0.00000000001 0.00000000001 0.00000000001"/>
-        <geom name="pole_point_mass" class="unused" type="sphere" contype="0" conaffinity="0" group="0" size="0.05" pos="0 0 0" euler="0 -0 0" rgba="1 0.5843 0.7843 0.5"/>
-        <geom name="pole_rod" class="unused" type="cylinder" contype="0" conaffinity="0" group="0" size="0.025 0.25" pos="0 0 0.25" euler="0 -0 0" rgba="0.6118 0.8627 1 0.5"/>
+        <geom name="pole_point_mass" class="unused" type="sphere" contype="0" conaffinity="0" group="0" size="0.05" pos="0 0 0" euler="0 -0 0"/>
+        <geom name="pole_rod" class="unused" type="cylinder" contype="0" conaffinity="0" group="0" size="0.025 0.25" pos="0 0 0.25" euler="0 -0 0"/>
         <joint name="PolePin" class="unused" type="hinge" pos="0 0 0.5" axis="0 -1 0" damping="0.1"/>
       </body>
     </body>

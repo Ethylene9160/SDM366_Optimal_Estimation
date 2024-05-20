@@ -168,6 +168,15 @@ cython_debug/
 *.pdf
 !readme.pdf
 
+# excel files
+*.xls
+*.xlsx
+
+# zip, rar, 7z
+*.zip
+*.rar
+*.7z
+
 # word files
 *.doc
 *.docx

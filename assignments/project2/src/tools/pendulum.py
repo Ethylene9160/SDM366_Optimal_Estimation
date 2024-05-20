@@ -2,7 +2,6 @@ import numpy as np
 
 from . import lqr_discrete as lqr
 
-# import control
 
 class Pendulum:
     def __init__(self,
@@ -65,7 +64,6 @@ class Pendulum:
         :param epochs: iteration times for the LQR algorithm
         :return: no return. The K matrix will be updated.
         '''
-        # self.K = control.dlqr(self.A, self.B, self.Q, self.R)[0]
         self.K = lqr.getDiscreteKN(self.A, self.B, self.Q, self.R, epochs, 4, 1)
 
     def step_in(self):
