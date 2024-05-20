@@ -1,0 +1,111 @@
+<mujoco model="xiaotian">
+  <compiler angle="radian" meshdir="../meshes/" />
+  <statistic meansize="0.196962" extent="0.915486" center="-0.0586031 0 0.827513" />
+
+  <option timestep="0.001" />
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512"
+      height="3072" />
+    <texture type="2d" name="texplane" builtin="checker" mark="cross" rgb1="0.2 0.3 0.4"
+      rgb2="0.1 0.15 0.2" markrgb="0.8 0.8 0.8" width="512" height="512" />
+    <material name="matplane" texture="texplane" texuniform="true" reflectance="0.3" />
+  </asset>
+  <worldbody>
+    <geom name="floor" size="15 15 1" type="plane" margin="0.001" material="matplane" />
+    <light pos="0 0 5" dir="0 0 -1" directional="true" castshadow="false" diffuse="0.4 0.4 0.4"
+      specular="0.1 0.1 0.1" />
+    <light pos="0 0 4" dir="0 0 -1" directional="true" diffuse="0.6 0.6 0.6" specular="0.2 0.2 0.2" />
+
+    <body name="base_Link" pos="0 0 0.625">
+      <!-- <joint type="free" /> -->
+      <inertial pos="-0.014443 0.00030627 -0.00919854"
+        quat="0.944791 -0.021413 -0.326962 -0.00258333" mass="6.5679"
+        diaginertia="0.101535 0.0644894 0.0577463" />
+      <site name="imu" pos="0 0 0" />
+      <joint name="base_static_joint" type="free" />
+      <geom size="0.1 0.15 0.075" pos="-0.04 0 0.09" type="box" rgba="0.79216 0.81961 0.93333 1" />
+      <body name="abad_L_Link" pos="0.0034 0.095 -0.07976">
+        <inertial pos="-0.0684789 0.0474493 -3.937e-05" quat="0.579962 0.577708 0.403974 0.408291"
+          mass="1.36322" diaginertia="0.00177181 0.00150822 0.0011789" />
+        <joint name="abad_L_Joint" pos="0 0 0" axis="1 0 0" range="-0.38397 1.39626" />
+        <geom size="0.05 0.025" pos="-0.08 0 0" quat="0.707388 0.706825 0 0" type="cylinder"
+          rgba="0.79216 0.81961 0.93333 1" />
+        <body name="hip_L_Link" pos="-0.073 0.021 0">
+          <inertial pos="-0.0255597 -0.050669 -0.0331907" quat="0.865463 0.209848 0.234518 0.389794"
+            mass="2.07876" diaginertia="0.016995 0.0167546 0.00239838" />
+          <joint name="hip_L_Joint" pos="0 0 0" axis="0 1 0" range="-1.01229 1.51844" />
+          <geom size="0.035 0.075" pos="-0.1 -0.03 -0.14" quat="0.965093 0 0.261909 0"
+            type="cylinder" rgba="1 1 1 1" />
+          <body name="knee_L_Link" pos="-0.15 -0.021 -0.25981">
+            <inertial pos="0.0907042 -5.58315e-05 -0.150354"
+              quat="0.679733 -0.187118 -0.186444 0.684243" mass="0.388742"
+              diaginertia="0.00612967 0.00610684 0.00010161" />
+            <joint name="knee_L_Joint" pos="0 0 0" axis="0 -1 0" range="-0.872665 1.39626" />
+            <geom size="0.015 0.13" pos="0.078 0 -0.12" quat="0.962425 0 -0.271547 0"
+              type="cylinder" rgba="0.79216 0.81961 0.93333 1" />
+            <geom size="0.035" pos="0.15 0 -0.25566" rgba="0.26667 0.26667 0.26667 1" contype="1" conaffinity="1"/>
+          </body>
+        </body>
+      </body>
+      <body name="abad_R_Link" pos="0.0034 -0.095 -0.07976">
+        <inertial pos="-0.0685008 -0.0474493 0.0001094" quat="0.402888 0.409334 0.580383 0.577307"
+          mass="1.36322" diaginertia="0.00177228 0.00150945 0.0011777" />
+        <joint name="abad_R_Joint" pos="0 0 0" axis="1 0 0" range="-1.39626 0.38397" />
+        <geom size="0.05 0.025" pos="-0.08 0 0" quat="0.707388 0.706825 0 0" type="cylinder"
+          rgba="1 1 1 1" />
+        <body name="hip_R_Link" pos="-0.073 -0.021 0">
+          <inertial pos="-0.0256618 0.050669 -0.0332169" quat="0.392645 0.233682 0.210444 0.864255"
+            mass="2.07876" diaginertia="0.0169748 0.0167414 0.00240264" />
+          <joint name="hip_R_Joint" pos="0 0 0" axis="0 -1 0" range="-1.51844 1.01229" />
+          <geom size="0.035 0.075" pos="-0.1 0.03 -0.14" quat="0.965093 0 0.261909 0"
+            type="cylinder" rgba="1 1 1 1" />
+          <body name="knee_R_Link" pos="-0.15 0.021 -0.25981">
+            <inertial pos="0.090705 5.48153e-05 -0.150355"
+              quat="0.68417 -0.186464 -0.187092 0.679808" mass="0.38874"
+              diaginertia="0.00612974 0.00610688 0.000101637" />
+            <joint name="knee_R_Joint" pos="0 0 0" axis="0 1 0" range="-1.39626 0.872665" />
+            <geom size="0.015 0.13" pos="0.078 0 -0.12" quat="0.962425 0 -0.271547 0"
+              type="cylinder" rgba="0.79216 0.81961 0.93333 1" />
+            <geom size="0.035" pos="0.15 0 -0.25566" rgba="0.26667 0.26667 0.26667 1" contype="1" conaffinity="1"/>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+
+  <actuator>
+    <general name="abad_L_Joint" joint="abad_L_Joint" ctrlrange="-30 30" />
+    <general name="hip_L_Joint" joint="hip_L_Joint" ctrlrange="-30 30" />
+    <general name="knee_L_Joint" joint="knee_L_Joint" ctrlrange="-30 30" />
+
+    <general name="abad_R_Joint" joint="abad_R_Joint" ctrlrange="-30 30" />
+    <general name="hip_R_Joint" joint="hip_R_Joint" ctrlrange="-30 30" />
+    <general name="knee_R_Joint" joint="knee_R_Joint" ctrlrange="-30 30" />
+  </actuator>
+
+  <sensor>
+    <gyro name="imu_gyro" site="imu" noise="0.02"/>
+    <accelerometer name="imu_acc" site="imu" noise="0.02"/>
+    <framequat name="imu_quat" objtype="site" objname="imu" noise="0.02"/>
+
+    <!-- <gyro name="imu_gyro" site="imu" />
+    <accelerometer name="imu_acc" site="imu" />
+    <framequat name="imu_quat" objtype="site" objname="imu"/> -->
+
+    <jointpos name="abad_L_Joint_pos" joint="abad_L_Joint" />
+    <jointpos name="hip_L_Joint_pos" joint="hip_L_Joint" />
+    <jointpos name="knee_L_Joint_pos" joint="knee_L_Joint" />
+    <jointpos name="abad_R_Joint_pos" joint="abad_R_Joint" />
+    <jointpos name="hip_R_Joint_pos" joint="hip_R_Joint" />
+    <jointpos name="knee_R_Joint_pos" joint="knee_R_Joint" />
+
+    <jointvel name="abad_L_Joint_vel" joint="abad_L_Joint" />
+    <jointvel name="hip_L_Joint_vel" joint="hip_L_Joint" />
+    <jointvel name="knee_L_Joint_vel" joint="knee_L_Joint" />
+    <jointvel name="abad_R_Joint_vel" joint="abad_R_Joint" />
+    <jointvel name="hip_R_Joint_vel" joint="hip_R_Joint" />
+    <jointvel name="knee_R_Joint_vel" joint="knee_R_Joint" />
+  </sensor>
+</mujoco>
