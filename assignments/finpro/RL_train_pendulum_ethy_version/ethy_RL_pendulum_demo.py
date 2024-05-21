@@ -148,7 +148,7 @@ if __name__ == "__main__":
     agent = tools.Agent(obs_space_dims, action_space_dims)
 
     model_path = "policy_network.pth"
-    tools.load_model(agent.policy_network, model_path)
+    tools.load_model(agent.policy_network, "ethy_official_model6.pth")
     # create viewer
     with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
         total_num_episodes = int(3e3)
@@ -173,7 +173,7 @@ if __name__ == "__main__":
                 reward = - (data.qpos[1] ** 3 + 10 * data.qvel[1] ** 2 + 0.001 * action ** 2)  # Example reward function
                 rewards.append(reward)
                 log_probs.append(log_prob)
-                done = data.time > 2  # Example condition to end episode
+                done = data.time > 3  # Example condition to end episode
 
                 with viewer.lock():
                     viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = int(data.time % 2)
