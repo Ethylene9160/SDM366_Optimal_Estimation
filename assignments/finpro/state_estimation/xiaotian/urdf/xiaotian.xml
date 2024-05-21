@@ -1,5 +1,5 @@
 <mujoco model="xiaotian">
-  <compiler angle="radian" meshdir="../meshes/" />
+  <compiler angle="radian" meshdir="../meshes/" autolimits="true"/>
   <statistic meansize="0.196962" extent="0.915486" center="-0.0586031 0 0.827513" />
 
   <option timestep="0.001" />
