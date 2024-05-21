@@ -148,7 +148,7 @@ if __name__ == "__main__":
     agent = tools.Agent(obs_space_dims, action_space_dims)
 
     model_path = "policy_network.pth"
-    tools.load_model(agent.policy_network, "ethy_official_model6.pth")
+    tools.load_model(agent.policy_network, "policy_network7.pth")
     # create viewer
     with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
         total_num_episodes = int(3e3)
@@ -170,11 +170,14 @@ if __name__ == "__main__":
                 action, log_prob = agent.sample_action(state)
                 data.ctrl[0] = action
                 mujoco.mj_step(model, data)
-                reward = - (data.qpos[1] ** 3 + 10 * data.qvel[1] ** 2 + 0.001 * action ** 2)  # Example reward function
+                reward = - (data.qpos[1] ** 2 * data.qvel[1] ** 2)  # Example reward function
                 rewards.append(reward)
                 log_probs.append(log_prob)
-                done = data.time > 3  # Example condition to end episode
+                done = data.time > 10  # Example condition to end episode
 
+                ####################################
+                ### commit the following line to speed up the training
+                ####################################
                 with viewer.lock():
                     viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = int(data.time % 2)
                 viewer.sync()
@@ -182,6 +185,8 @@ if __name__ == "__main__":
                 time_until_next_step = model.opt.timestep - (time.time() - step_start)
                 if time_until_next_step > 0:
                     time.sleep(time_until_next_step)
+                ####################################
+                ####################################
 
             agent.update(rewards, log_probs)
             episode += 1
