@@ -68,13 +68,16 @@ class Agent:
 
         self.optimizer.zero_grad()
         loss.backward()
+        # self.optimizer.step()
+
+    def apply_gradients(self):
         self.optimizer.step()
 
 
 def save_model(model: nn.Module, path: str):
     """Saves the policy network to the specified path."""
     torch.save(model.state_dict(), path)
-    print(f"Model saved at {path}")
+    # print(f"Model saved at {path}")
 
 
 def load_model(model: nn.Module, path: str):
@@ -191,17 +194,18 @@ if __name__ == "__main__":
     action_space_dims = model.nu
     agent_params = (obs_space_dims, action_space_dims)
 
-    model_path = "ethy_official_modela.pth"
+    model_path = "lifer_official_model0.pth"
+    save_model_path = "lifer_official_model1.pth"
     save_model_path = "lifer_official_model0.pth"
 
-    agent = Agent(*agent_params)
-    load_model(agent.policy_network, model_path)
-
-    total_num_episodes = int(5e3)
+    total_num = int(200)
+    batch_iter = 10
     episode = 0
 
+    visualize_num = 5
+
     visualize = True  # 控制是否可视化展示训练成果
-    visualize = False
+    # visualize = False
 
     if visualize:
         # 使用MuJoCo的viewer进行可视化
@@ -209,7 +213,7 @@ if __name__ == "__main__":
         load_model(agent.policy_network, save_model_path)
 
         with mujoco.viewer.launch_passive(model, data) as viewer:
-            while viewer.is_running() and episode < total_num_episodes:
+            while viewer.is_running() and episode < visualize_num:
                 # 重置环境到初始状态
                 mujoco.mj_resetData(model, data)
                 done = False
@@ -234,25 +238,39 @@ if __name__ == "__main__":
                 episode += 1
     else:
         # 后台运行仿真
-        print(f"Starting simulation with {total_num_episodes} episodes...")
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [executor.submit(simulate_episode, agent_params, xml_path, model_path, visualize) for _ in
-                       range(total_num_episodes)]
+        agent = Agent(*agent_params)
+        load_model(agent.policy_network, model_path)
 
-            for future in concurrent.futures.as_completed(futures):
-                gradients = future.result()
-                for param, grad in zip(agent.policy_network.parameters(), gradients):
-                    if grad is not None:
-                        if param.grad is None:
-                            param.grad = grad
-                        else:
-                            param.grad += grad
-                episode += 1
-                print(f"Episode {episode}: Gradients aggregated")
+        print(f"Starting simulation with {total_num} x {batch_iter} episodes...")
+        try:
+            for n_iter in range(total_num):
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    futures = [executor.submit(simulate_episode, agent_params, xml_path, model_path, visualize) for _ in
+                               range(batch_iter)]
 
-            agent.optimizer.step()
-            agent.optimizer.zero_grad()
+                    for future in concurrent.futures.as_completed(futures):
+                        gradients = future.result()
+                        for param, grad in zip(agent.policy_network.parameters(), gradients):
+                            if grad is not None:
+                                if param.grad is None:
+                                    param.grad = grad
+                                else:
+                                    param.grad += grad
+                        # episode += 1
+                    # print(f"Episode {episode}: Gradients aggregated")
+                agent.apply_gradients()
+                agent.optimizer.zero_grad()
+
+                save_model(agent.policy_network, save_model_path)
+                model_path = save_model_path
+
+                print(f"Iter {n_iter} with {batch_iter} episodes finished")
+                n_iter += 1
+
+        except KeyboardInterrupt:
+            print("Training interrupted")
+            print(f"Model has been changed and saved at {save_model_path}")
+
 
         print("Simulation complete.")
-
-    save_model(agent.policy_network, save_model_path)
+        print(f"Model saved at {save_model_path}")
