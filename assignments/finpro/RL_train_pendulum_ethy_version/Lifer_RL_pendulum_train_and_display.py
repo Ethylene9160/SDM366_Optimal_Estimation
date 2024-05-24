@@ -172,6 +172,7 @@ def simulate_episode(agent_params, xml_path, model_path, render=False):
         action, log_prob = agent.sample_action(state)
         data.ctrl[0] = action
         mujoco.mj_step(model, data)
+
         reward = - (data.qpos[1] ** 2 * data.qvel[1] ** 2)
         rewards.append(reward)
         log_probs.append(log_prob)
@@ -194,9 +195,9 @@ if __name__ == "__main__":
     action_space_dims = model.nu
     agent_params = (obs_space_dims, action_space_dims)
 
-    model_path = "lifer_official_model0.pth"
-    save_model_path = "lifer_official_model1.pth"
-    save_model_path = "lifer_official_model0.pth"
+    model_path = "models/lifer_official_model0.pth"
+    save_model_path = "models/lifer_official_model1.pth"
+    save_model_path = "models/lifer_official_model0.pth"
 
     total_num = int(200)
     batch_iter = 10

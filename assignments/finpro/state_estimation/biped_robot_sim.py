@@ -34,7 +34,7 @@ SOURCE_DIR = (
     "../state_estimation"  # TODO: change to your own project dir
 )
 # Flag to indicate whether to use the simulation environment
-USE_SIM = False  # change to True to use original controller provided by professor.
+USE_SIM = True  # change to True to use original controller provided by professor.
 
 
 class MuJoCoSim:

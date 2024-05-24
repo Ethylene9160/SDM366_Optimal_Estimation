@@ -110,33 +110,10 @@ def init_mujoco(model_path):
     return mujoco_model, mujoco_data
 
 
-# def init_glfw(width=640, height=480):
-#     if not glfw.init():
-#         return None
-#     window = glfw.create_window(width, height, "MuJoCo Simulation", None, None)
-#     if not window:
-#         glfw.terminate()
-#         return None
-#     glfw.make_context_current(window)
-#     return window
-
-
-# def render(window, mujoco_model, mujoco_data):
-#     while not glfw.window_should_close(window):
-#         mujoco.mj_step(mujoco_model, mujoco_data)
-#
-#         viewport = mujoco.MjrRect(0, 0, 640, 480)
-#         scene = mujoco.MjvScene(mujoco_model, maxgeom=1000)
-#         context = mujoco.MjrContext(mujoco_model, mujoco.mjtFontScale.mjFONTSCALE_150)
-#
-#         mujoco.mjv_updateScene(mujoco_model, mujoco_data, mujoco.MjvOption(), None, mujoco.MjvCamera(),
-#                                mujoco.mjtCatBit.mjCAT_ALL, scene)
-#         mujoco.mjr_render(viewport, scene, context)
-#
-#         glfw.swap_buffers(window)
-#         glfw.poll_events()
-#     glfw.terminate()
-
+def cal_dis(data):
+    x = data.qpos[0] + 0.6*np.sin(data.qpos[1])
+    y = 0.6*np.cos(data.qpos[1])
+    return x**2+(y-0.6)**2
 
 if __name__ == "__main__":
     xml_path = "inverted_pendulum.xml"
@@ -147,8 +124,8 @@ if __name__ == "__main__":
     action_space_dims = model.nu
     agent = tools.Agent(obs_space_dims, action_space_dims)
 
-    model_path = "policy_network.pth"
-    tools.load_model(agent.policy_network, "policy_network7.pth")
+    model_path = "models/policy_network9.pth"
+    tools.load_model(agent.policy_network, model_path)
     # create viewer
     with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
         total_num_episodes = int(3e3)
@@ -170,10 +147,26 @@ if __name__ == "__main__":
                 action, log_prob = agent.sample_action(state)
                 data.ctrl[0] = action
                 mujoco.mj_step(model, data)
-                reward = - (data.qpos[1] ** 2 * data.qvel[1] ** 2)  # Example reward function
+
+                posfactor = 1.0
+                if abs(data.qpos[0]) > 0.7:
+                    posfactor = 5000.0
+                elif abs(data.qpos[0]) > 0.6:
+                    posfactor = 600.0
+                elif abs(data.qpos[0]) > 0.5:
+                    posfactor = 100.0
+                elif abs(data.qpos[0]) > 0.4:
+                    posfactor = 20.0
+                elif abs(data.qpos[0]) > 0.3:
+                    posfactor = 5.0
+                elif abs(data.qpos[0]) > 0.2:
+                    posfactor = 2.0
+
+                # reward = - ((data.qpos[1] ** 2+0.01) * (data.qvel[1] ** 2+0.001)*(data.qpos[0]**2+0.01)*(data.qvel[0]**2+1)*posfactor)  # Example reward function
+                reward = -cal_dis(data)
                 rewards.append(reward)
-                log_probs.append(log_prob)
-                done = data.time > 10  # Example condition to end episode
+                # log_probs.append(log_prob)
+                done = data.time > 150  # Example condition to end episode
 
                 ####################################
                 ### commit the following line to speed up the training
@@ -188,7 +181,7 @@ if __name__ == "__main__":
                 ####################################
                 ####################################
 
-            agent.update(rewards, log_probs)
+            # agent.update(rewards, log_probs)
             episode += 1
 
 

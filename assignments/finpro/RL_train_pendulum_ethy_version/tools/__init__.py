@@ -39,7 +39,7 @@ class Agent:
         """
         self.policy_network = Policy_Network(obs_space_dims, action_space_dims)
         self.optimizer = optim.Adam(self.policy_network.parameters(), lr=lr)
-        self.gamma = 0.75  # Discount factor
+        self.gamma = 0.9  # Discount factor
 
     def sample_action(self, state: np.ndarray) -> tuple[float, torch.Tensor]:
         """Samples an action according to the policy network given the current state.
