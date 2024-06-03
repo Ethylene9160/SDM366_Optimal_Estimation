@@ -29,7 +29,7 @@ class Agent:
     collected rewards.
     """
 
-    def __init__(self, obs_space_dims: int, action_space_dims: int, lr: float = 1e-3):
+    def __init__(self, obs_space_dims: int, action_space_dims: int, lr: float = 1e-3, gama:float = 0.95):
         """Initializes the agent with a neural network policy.
 
         Args:
@@ -39,7 +39,7 @@ class Agent:
         """
         self.policy_network = Policy_Network(obs_space_dims, action_space_dims)
         self.optimizer = optim.Adam(self.policy_network.parameters(), lr=lr)
-        self.gamma = 0.9  # Discount factor
+        self.gamma = gama  # Discount factor
 
     def sample_action(self, state: np.ndarray) -> tuple[float, torch.Tensor]:
         """Samples an action according to the policy network given the current state.
