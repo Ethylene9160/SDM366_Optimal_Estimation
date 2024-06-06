@@ -54,8 +54,9 @@ def video_record(mujoco_model, mujoco_data, video_writer):
 
 if __name__ == "__main__":
     xml_path = "inverted_double_pendulum.xml"
-    model_path = "2024-06-05-08-25-30/temp_model_save_at_epoch_150.pth"
-    # model_path = "models/ethy_official_model4.pth"
+    # model_path = "2024-06-05-08-25-30/temp_model_save_at_epoch_150.pth" # official model4
+    # model_path = "2024-06-05-11-01-40/temp_model_save_at_epoch_600.pth" #official model5
+    model_path = "models/ethy_official_model4.pth"
     model, data = tools.init_mujoco(xml_path)
     window = init_glfw()
 
