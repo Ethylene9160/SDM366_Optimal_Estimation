@@ -34,7 +34,7 @@ from pinocchio.robot_wrapper import RobotWrapper
 
 # Set the directory for the simulation environment's source code
 SOURCE_DIR = (
-    "/your_directory/"  # TODO: change to your own project dir
+    ""  # TODO: change to your own project dir
 )
 
 urdf_path = "xiaotian/urdf/xiaotian.urdf"  # 替换为你的URDF文件路径
@@ -60,7 +60,7 @@ class MuJoCoSim:
 
         # Load the MuJoCo model
         self.model = mujoco.MjModel.from_xml_path(
-            os.path.join(SOURCE_DIR, "xiaotian/urdf/xiaotian.xml")
+            "xiaotian/urdf/xiaotian.xml"
         )
         self.model.opt.timestep = 0.001
 
@@ -243,6 +243,8 @@ class MuJoCoSim:
         else:
             return self.x[3:6]  # TODO: implement your codes to estimate base linear velocity
 
+
+
 def z2x_EKF(x, z, P, u, Q, R, contact_info):
     # R 是测量协方差， Q是过程预测协方差，当处于摆动状态时，需要增大Q的方差，告诉模型现在过程不准
     if contact_info[0] == 0:
@@ -270,6 +272,8 @@ def z2x_EKF(x, z, P, u, Q, R, contact_info):
     B = np.zeros([12, 3])
     B[3:6, :] = np.eye(3)*timestep
     global z2x_x, z2x_v
+    z2x_x = 0
+    z2x_v = 0
     z2x_v += u[0]*timestep
     z2x_x += z2x_v*timestep
     x_hat = A@x + B@u
@@ -344,10 +348,10 @@ def z2x_getFootPosition(leftP, rightP, leftV, rightV, contact):
 @hydra.main(
     version_base=None,
     config_name="xiaotian_config",
-    config_path=os.path.join(SOURCE_DIR, "cfg"),
+    config_path="cfg",
 )
 def main(cfg: DictConfig) -> None:
-    policy_plan_path = os.path.join(SOURCE_DIR, "policy/policy.pt")
+    policy_plan_path = "policy/policy.pt"
     policy_plan = torch.jit.load(policy_plan_path)
     sim = MuJoCoSim(cfg.env, policy_plan)
     sim.run()
