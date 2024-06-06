@@ -1,0 +1,17 @@
+env:
+  observation:
+    normalization:
+      dof_pos: 1.0
+      dof_vel: 1.0
+      gravity: 1.0
+
+      ang_vel: 1.0
+      lin_vel: 1.0
+      base_height: 1.0
+
+  clip:
+    clip_actions: 100.0
+    clip_observations: 100.0
+
+  num_actor_obs: 37
+  num_actions: 6
