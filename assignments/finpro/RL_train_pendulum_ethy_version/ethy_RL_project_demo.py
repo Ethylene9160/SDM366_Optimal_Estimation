@@ -46,13 +46,13 @@ def render(window, mujoco_model, mujoco_data):
 
 def calculateRev(dis):
     if dis < 0.0001:
-        return 0.0
+        return 1.0
     return np.exp(100.0*dis)
 
 if __name__ == "__main__":
     xml_path = "inverted_pendulum.xml"
-    model_path = "new_policy0.pth"
-    save_model_path = "new_policy0.pth"
+    model_path = "new_policy1.pth"
+    save_model_path = "new_policy1.pth"
 
     model, data = tools.init_mujoco(xml_path)
     window = init_glfw()
@@ -60,9 +60,9 @@ if __name__ == "__main__":
     if window:
         obs_space_dims = model.nq
         action_space_dims = model.nu
-        agent = tools.Agent(obs_space_dims, action_space_dims, lr=1e-3)
+        agent = tools.Agent(obs_space_dims, action_space_dims, lr=8e-4, gama=0.85)
         tools.load_model(agent.policy_network, model_path)
-        total_num_episodes = int(3000) # training epochs
+        total_num_episodes = int(2000) # training epochs
 
         for episode in range(total_num_episodes):
             rewards = []
@@ -83,27 +83,13 @@ if __name__ == "__main__":
                 action, log_prob = agent.sample_action(state)
                 data.ctrl[0] = action
                 mujoco.mj_step(model, data)
-                # reward = 0
-                # posfactor = 1.0
-                # if abs(data.qpos[0]) > 0.6:
-                #     posfactor = 5000.0
-                # elif abs(data.qpos[0]) > 0.5:
-                #     posfactor = 600.0
-                # elif abs(data.qpos[0]) > 0.35:
-                #     posfactor = 100.0
-                # elif abs(data.qpos[0]) > 0.25:
-                #     posfactor = 20.0
-                # elif abs(data.qpos[0]) > 0.15:
-                #     posfactor = 5.0
-                # elif abs(data.qpos[0]) > 0.1:
-                #     posfactor = 2.0
                 reward = -calculateRev(cal_dis(data))
                 # reward = -  (data.qpos[1] ** 2 * data.qvel[1] ** 2)*posfactor  # Example reward function
                 rewards.append(reward)
                 log_probs.append(log_prob)
                 # print(cal_dis(data))
-                done = data.time > 0.5  # Example condition to end episode
-                # render(window, model, data) # commit this line to speed up the training
+                done = data.time > 1.0  # Example condition to end episode
+                render(window, model, data) # commit this line to speed up the training
             log_probs.append(log_prob)
             agent.update(rewards, log_probs)
 

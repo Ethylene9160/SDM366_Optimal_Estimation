@@ -124,7 +124,7 @@ if __name__ == "__main__":
     action_space_dims = model.nu
     agent = tools.Agent(obs_space_dims, action_space_dims)
 
-    model_path = "models/policy_network9.pth"
+    model_path = "models/official_model0.pth"
     tools.load_model(agent.policy_network, model_path)
     # create viewer
     with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:

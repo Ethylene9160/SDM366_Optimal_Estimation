@@ -9,8 +9,8 @@ from torch.distributions.normal import Normal
 import mujoco
 import mujoco.viewer
 
-from . import Agent
-from . import DQN, A2C
+
+from . import A2C
 
 from .A2C import A2CAgent
 
@@ -18,7 +18,6 @@ def save_model(model: nn.Module, path: str):
     """Saves the policy network to the specified path."""
     torch.save(model.state_dict(), path)
     print(f"Model saved at {path}")
-
 
 def load_model(model: nn.Module, path: str):
     """Loads the policy network from the specified path."""
@@ -67,20 +66,22 @@ np.random.seed(0)
 def init_mujoco(model_path):
     mujoco_model = mujoco.MjModel.from_xml_path(model_path)
     mujoco_data = mujoco.MjData(mujoco_model)
-    # init_x = np.random.uniform(-0.1, 0.1)
-    # init_theta1 = np.random.uniform(-0.1, 0.1)
-    # init_theta2 = np.random.uniform(-0.1, 0.1)
-    # mujoco_data.qpos[0] = init_x
-    # mujoco_data.qpos[1] = init_theta1
-    # mujoco_data.qpos[2] = init_theta2
-    # print(f"Initial x: {init_x}, theta1: {init_theta1}, theta2: {init_theta2}")
     return mujoco_model, mujoco_data
 
 def random_state(data):
     init_x = np.random.uniform(-0.1, 0.1)
-    init_theta1 = np.random.uniform(-0.1, 0.1)
-    init_theta2 = np.random.uniform(-0.1, 0.1)
+    init_theta = np.random.uniform(-0.1, 0.1)
+    init_v = np.random.uniform(-0.1, 0.1)
+    init_omega = np.random.uniform(-0.1, 0.1)
     data.qpos[0] = init_x
-    data.qpos[1] = init_theta1
-    data.qpos[2] = init_theta2
-    print(f"Initial x: {init_x}, theta1: {init_theta1}, theta2: {init_theta2}")
+    data.qpos[1] = init_theta
+    data.qvel[0] = init_v
+    data.qvel[1] = init_omega
+
+def get_obs(data):
+    return np.concatenate(
+        [
+            data.qpos,
+            data.qvel
+        ]
+    ).ravel()

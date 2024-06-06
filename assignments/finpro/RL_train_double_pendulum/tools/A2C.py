@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 from torch.distributions import Normal
-
-class A3CAgent:
+import torch.nn.functional as F
+class A2CAgent:
     """Agent that learns to solve the Inverted Pendulum task using an Actor-Critic algorithm.
     The agent utilizes a policy network to sample actions and a value network to estimate state values.
     """
@@ -55,7 +55,7 @@ class A3CAgent:
 
         discounted_rewards = torch.FloatTensor(discounted_rewards)
         log_probs = torch.stack(log_probs)
-
+        states = np.array(states)
         states = torch.FloatTensor(states)
         values = self.value_network(states)
 
@@ -132,6 +132,8 @@ class PolicyNetwork(nn.Module):
         """
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
+        # x = F.elu(self.fc1(x))
+        # x = F.elu(self.fc2(x))
         mean = self.mean(x)
         log_std = self.log_std(x)
         std = torch.exp(log_std)
@@ -163,5 +165,7 @@ class ValueNetwork(nn.Module):
         """
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
+        # x = F.elu(self.fc1(x))
+        # x = F.elu(self.fc2(x))
         value = self.value(x)
         return value
