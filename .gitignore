@@ -195,3 +195,5 @@ current_ass/
 !SDM366_project.pdf
 /assignments/finpro/state_estimation/outputs/
 assignments/finpro/RL_train_pendulum_ethy_version/tools/__init__.py
+
+*.h
