@@ -56,7 +56,7 @@ if __name__ == "__main__":
     xml_path = "inverted_double_pendulum.xml"
     # model_path = "2024-06-05-08-25-30/temp_model_save_at_epoch_150.pth" # official model4
     # model_path = "2024-06-05-11-01-40/temp_model_save_at_epoch_600.pth" #official model5
-    model_path = "models/ethy_official_model4.pth"
+    model_path = "models/ethy_official_model5.pth"
     model, data = tools.init_mujoco(xml_path)
     window = init_glfw()
 
@@ -103,7 +103,7 @@ if __name__ == "__main__":
                 # states.append(state.copy())
                 done = data.time > 450 or y < 1.0  # Example condition to end episode
                 # video_record(model, data, video_writer) # uncommit this to make vedio
-                # render(window, model, data) # commit this line to speed up the training
+                render(window, model, data) # commit this line to speed up the training
             # log_probs.append(log_prob)
             # agent.update(rewards, log_probs, states)
 
