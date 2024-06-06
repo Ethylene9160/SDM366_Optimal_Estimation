@@ -46,6 +46,7 @@ USE_SIM = False  # TODO: you should change to False to implement your own state 
 
 timestep = 0.001
 
+
 class MuJoCoSim:
     """Main class for setting up and running the MuJoCo simulation."""
 
@@ -92,21 +93,21 @@ class MuJoCoSim:
         self.commands[3] = 0.625  # base height
 
         # 自定义变量
-        self.last_quaternion = np.quaternion(1,0,0,0)
+        self.last_quaternion = np.quaternion(1, 0, 0, 0)
         self.lastBPL = np.zeros(3)
         self.lastBPR = np.zeros(3)
-        self.x = np.array([0, 0, 0.625, 0, 0, 0, -0.0696, 0.095, 0, -0.0696, -0.095, 0]).T 
-        self.P = np.eye(12)*0.01
+        self.x = np.array([0, 0, 0.625, 0, 0, 0, -0.0696, 0.095, 0, -0.0696, -0.095, 0]).T
+        self.P = np.eye(12) * 0.01
         self.EKF_Q = np.eye(12)
-        self.EKF_Q[:3, :3] = np.eye(3)*timestep*0.02/20
-        self.EKF_Q[3:6, 3:6] = np.eye(3)*timestep*0.02*9.8/20
-        self.EKF_Q[6:9, 6:9] = np.eye(3)*timestep*0.02
-        self.EKF_Q[9:12, 9:12] = np.eye(3)*timestep*0.02
+        self.EKF_Q[:3, :3] = np.eye(3) * timestep * 0.02 / 20
+        self.EKF_Q[3:6, 3:6] = np.eye(3) * timestep * 0.02 * 9.8 / 20
+        self.EKF_Q[6:9, 6:9] = np.eye(3) * timestep * 0.02
+        self.EKF_Q[9:12, 9:12] = np.eye(3) * timestep * 0.02
 
-        self.EKF_R = np.zeros((14,14))
-        self.EKF_R[:6, :6] = np.eye(6)*0.01 
-        self.EKF_R[6:12, 6:12] = np.eye(6)*0.01
-        self.EKF_R[12:14, 12:14] = np.eye(2)*0.01
+        self.EKF_R = np.zeros((14, 14))
+        self.EKF_R[:6, :6] = np.eye(6) * 0.01
+        self.EKF_R[6:12, 6:12] = np.eye(6) * 0.01
+        self.EKF_R[12:14, 12:14] = np.eye(2) * 0.01
         self.W = np.zeros([3])
 
     def get_joint_state(self):
@@ -142,11 +143,11 @@ class MuJoCoSim:
                 right_contact = 1
         return np.array([left_contact, right_contact])
 
-    def compute_obs(self): #
+    def compute_obs(self):  #
         """Calculate and return the observed states from the policy input."""
         obs_scales = self.cfg.observation.normalization
         dof_pos, dof_vel = self.get_joint_state()
-        base_lin_vel, base_ang_vel, projected_gravity = self.get_base_state() #
+        base_lin_vel, base_ang_vel, projected_gravity = self.get_base_state()  #
         CommandScaler = np.array(
             [
                 obs_scales.lin_vel,
@@ -189,7 +190,7 @@ class MuJoCoSim:
         target_q = np.zeros(self.cfg.num_actions, dtype=np.double)
         while self.data.time < 1000.0 and self.viewer.is_running():
             step_start = time.time()
-            proprioception_obs = self.compute_obs() #
+            proprioception_obs = self.compute_obs()  #
             if self.iter_ % self.decimation == 0:
                 # proprioception_obs = self.compute_obs() #
                 action = (
@@ -244,91 +245,92 @@ class MuJoCoSim:
             return self.x[3:6]  # TODO: implement your codes to estimate base linear velocity
 
 
-
 def z2x_EKF(x, z, P, u, Q, R, contact_info):
     # R 是测量协方差， Q是过程预测协方差，当处于摆动状态时，需要增大Q的方差，告诉模型现在过程不准
     if contact_info[0] == 0:
-        Q[6:9, 6:9] = np.eye(3)*timestep*1e10*0.02/20
-        R[0:3, 0:3] = np.eye(3)*0.01*1e10
-        R[6:9, 6:9] = np.eye(3)*0.01*1e10
-        R[12, 12] = np.eye(1)*0.01*1e10
-        Q[9:12, 9:12] = np.eye(3)*timestep*0.02/20
-        R[3:6, 3:6] = np.eye(3)*0.01
-        R[9:12, 9:12] = np.eye(3)*0.01
-        R[13, 13] = np.eye(1)*0.01
+        Q[6:9, 6:9] = np.eye(3) * timestep * 1e10 * 0.02 / 20
+        R[0:3, 0:3] = np.eye(3) * 0.01 * 1e10
+        R[6:9, 6:9] = np.eye(3) * 0.01 * 1e10
+        R[12, 12] = np.eye(1) * 0.01 * 1e10
+        Q[9:12, 9:12] = np.eye(3) * timestep * 0.02 / 20
+        R[3:6, 3:6] = np.eye(3) * 0.01
+        R[9:12, 9:12] = np.eye(3) * 0.01
+        R[13, 13] = np.eye(1) * 0.01
     if contact_info[1] == 0:
-        Q[9:12, 9:12] = np.eye(3)*timestep*1e10*0.02/20
-        R[3:6, 3:6] = np.eye(3)*0.01*1e10
-        R[9:12, 9:12] = np.eye(3)*0.01*1e10
-        R[13, 13] = np.eye(1)*0.01*1e10
-        Q[6:9, 6:9] = np.eye(3)*timestep*0.02/20
-        R[0:3, 0:3] = np.eye(3)*0.01
-        R[6:9, 6:9] = np.eye(3)*0.01
-        R[12, 12] = np.eye(1)*0.01
+        Q[9:12, 9:12] = np.eye(3) * timestep * 1e10 * 0.02 / 20
+        R[3:6, 3:6] = np.eye(3) * 0.01 * 1e10
+        R[9:12, 9:12] = np.eye(3) * 0.01 * 1e10
+        R[13, 13] = np.eye(1) * 0.01 * 1e10
+        Q[6:9, 6:9] = np.eye(3) * timestep * 0.02 / 20
+        R[0:3, 0:3] = np.eye(3) * 0.01
+        R[6:9, 6:9] = np.eye(3) * 0.01
+        R[12, 12] = np.eye(1) * 0.01
     R = R * 1e10
 
     A = np.eye(12)
-    A[0:3, 3:6] = np.eye(3)*timestep
+    A[0:3, 3:6] = np.eye(3) * timestep
     B = np.zeros([12, 3])
-    B[3:6, :] = np.eye(3)*timestep
+    B[3:6, :] = np.eye(3) * timestep
     global z2x_x, z2x_v
     z2x_x = 0
     z2x_v = 0
-    z2x_v += u[0]*timestep
-    z2x_x += z2x_v*timestep
-    x_hat = A@x + B@u
-    P_hat = A@P@A.T + Q
+    z2x_v += u[0] * timestep
+    z2x_x += z2x_v * timestep
+    x_hat = A @ x + B @ u
+    P_hat = A @ P @ A.T + Q
     H = np.vstack((
-            np.hstack((np.eye(3), np.zeros([3, 3]), -np.eye(3), np.zeros([3, 3]))),
-            np.hstack((np.eye(3), np.zeros([3, 3]), np.zeros([3, 3]), -np.eye(3))),
-            np.hstack((np.zeros([3, 3]), np.eye(3), np.zeros([3, 3]), np.zeros([3, 3]))),
-            np.hstack((np.zeros([3, 3]), np.eye(3), np.zeros([3, 3]), np.zeros([3, 3]))),
-            np.hstack((np.zeros([1, 8]), np.array([[1]]), np.zeros([1, 3]))),
-            np.hstack( (np.zeros([1, 11]), np.array([[1]])) )
-            ))
-    K = P_hat @ H.T @ np.linalg.inv(H@P_hat@H.T + R)
-    x = x_hat + K@(z - H@x_hat)
-    P = (np.eye(12) - K@H)@P_hat
+        np.hstack((np.eye(3), np.zeros([3, 3]), -np.eye(3), np.zeros([3, 3]))),
+        np.hstack((np.eye(3), np.zeros([3, 3]), np.zeros([3, 3]), -np.eye(3))),
+        np.hstack((np.zeros([3, 3]), np.eye(3), np.zeros([3, 3]), np.zeros([3, 3]))),
+        np.hstack((np.zeros([3, 3]), np.eye(3), np.zeros([3, 3]), np.zeros([3, 3]))),
+        np.hstack((np.zeros([1, 8]), np.array([[1]]), np.zeros([1, 3]))),
+        np.hstack((np.zeros([1, 11]), np.array([[1]])))
+    ))
+    K = P_hat @ H.T @ np.linalg.inv(H @ P_hat @ H.T + R)
+    x = x_hat + K @ (z - H @ x_hat)
+    P = (np.eye(12) - K @ H) @ P_hat
     return x, P
+
 
 def z2x_Obserbation(BPL, BPR, BVL, BVR, W, quat, contact_info):
     matrix_q = quaternion.as_rotation_matrix(quat)
-    z = np.concatenate((-matrix_q@BPL,
-                        -matrix_q@BPR, # error?
-                        -matrix_q@(np.cross(W, BPL) + BVL),
-                        -matrix_q@(np.cross(W, BPR) + BVR),
-                        np.array([0.037062]), 
+    z = np.concatenate((-matrix_q @ BPL,
+                        -matrix_q @ BPR,  # error?
+                        -matrix_q @ (np.cross(W, BPL) + BVL),
+                        -matrix_q @ (np.cross(W, BPR) + BVR),
+                        np.array([0.037062]),
                         np.array([0.037062])
                         ), axis=0)
     return z, matrix_q
+
 
 def z2x_getFootPosition(leftP, rightP, leftV, rightV, contact):
     """
     得到在Body坐标系下的左右脚的位置和速度
     """
-    
+
     qpos = np.zeros(robot.model.nq)
     qvel = np.zeros(robot.model.nv)
-    
+
     qpos[:3] = leftP
     qpos[7:10] = rightP
     qvel[:3] = leftV
     qvel[7:10] = rightV
-    
+
     # 计算正运动学和雅可比矩阵
     pin.forwardKinematics(robot.model, robot.data, qpos, qvel)
     pin.updateFramePlacements(robot.model, robot.data)
 
     foot_L_id = robot.model.getFrameId("foot_L")
     foot_R_id = robot.model.getFrameId("foot_R")
-    
+
     foot_L_to_base = robot.data.oMf[foot_L_id]  # 从base_Link到foot_L的转换矩阵
     foot_R_to_base = robot.data.oMf[foot_R_id]  # 从base_Link到foot_R的转换矩阵
-    
+
     # 计算Jacobian矩阵
     J_foot_L = pin.computeFrameJacobian(robot.model, robot.data, qpos, foot_L_id, pin.LOCAL)
     J_foot_R = pin.computeFrameJacobian(robot.model, robot.data, qpos, foot_R_id, pin.LOCAL)
-    
+
     # 提取左右脚的速度
     v_foot_L = J_foot_L[:3, :] @ qvel  # 提取线速度部分
     v_foot_R = J_foot_R[:3, :] @ qvel  # 提取线速度部分
@@ -343,7 +345,7 @@ def z2x_getFootPosition(leftP, rightP, leftV, rightV, contact):
     v_foot_R_body = np.array([v_foot_R_body[1], v_foot_R_body[0], v_foot_R_body[2]])
     # 输出结果是[3,]维度
     return foot_L_pos_body, foot_R_pos_body, v_foot_L_body, v_foot_R_body
-    
+
 
 @hydra.main(
     version_base=None,
