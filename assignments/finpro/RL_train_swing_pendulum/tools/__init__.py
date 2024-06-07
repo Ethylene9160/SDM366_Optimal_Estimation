@@ -73,7 +73,8 @@ def init_mujoco(model_path):
     return mujoco_model, mujoco_data
 
 
-def random_state(data):
+def random_state(data, seed=2333):
+    np.random.seed(seed)
     init_x = np.random.uniform(-0.1, 0.1)
     init_theta = np.random.uniform(-0.1, 0.1)
     init_v = np.random.uniform(-0.1, 0.1)

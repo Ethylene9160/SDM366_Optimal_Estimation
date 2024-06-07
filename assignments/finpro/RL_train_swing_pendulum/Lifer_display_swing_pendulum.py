@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+import random
+import time
 import warnings
 
-warnings.filterwarnings("ignore")
-
-import numpy as np
-import mujoco
-import glfw
 import cv2
+import glfw
+import mujoco
+import numpy as np
+
 import tools
-import time
+
+warnings.filterwarnings("ignore")
 
 
 def init_glfw(width=1080, height=720):
@@ -58,31 +60,34 @@ def video_record(mujoco_model, mujoco_data, video_writer):
 
 if __name__ == "__main__":
     xml_path = "Lifer_inverted_swing_pendulum.xml"
-    model_path = "models/temp_model_save_at_epoch_100.pth"
+    model_path = "models/temp_1717794733_epoch_193.pth"
     model, data = tools.init_mujoco(xml_path)
     window = init_glfw()
 
+    if_random_seed = 1
+    seed = random.randint(0, 100000) if if_random_seed else 2333
+    print(f'The seed is: {seed}')
+
     if window:
-        # obs_space_dims = model.nq
         obs_space_dims = 6
         action_space_dims = model.nu
-        print('nq: ', model.nq)
-        print('nu: ', model.nu)
+        # print('nq: ', model.nq)
+        # print('nu: ', model.nu)
         agent = tools.DQNAgent(obs_space_dims, action_space_dims, lr=3e-4, gamma=0.99)
         agent.load_model(model_path)
-        total_num_episodes = int(10)  # training epochs
+        total_num_episodes = int(10)
         time_records = []
         for episode in range(total_num_episodes):
-            # video_writer = cv2.VideoWriter(f'vedio_for_{episode}th.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 30, (600, 480))
-            rewards = []
+            # video_writer = cv2.VideoWriter(f"video_{episode}th.mp4", cv2.VideoWriter_fourcc(*'mp4v'), 30, (600, 480))
+            # rewards = []
             # log_probs = []
-            states = []
+            # states = []
             done = False
             data.time = 0
             print('The episode is:', episode)
             # 重置环境到初始状态
             mujoco.mj_resetData(model, data)
-            tools.random_state(data)
+            tools.random_state(data, seed)
             while not done:
                 step_start = time.time()
                 state = tools.get_obs(data)
@@ -93,9 +98,11 @@ if __name__ == "__main__":
                 # rewards.append(reward)
                 # log_probs.append(log_prob)
                 # states.append(state.copy())
+
                 done = data.time > 450  # Example condition to end episode
-                # video_record(model, data, video_writer) # uncommit this to make vedio
-                render(window, model, data)  # commit this line to speed up the training
+
+                # video_record(model, data, video_writer) # uncommitted this to record video
+                render(window, model, data)
 
             # log_probs.append(log_prob)
             # agent.update(rewards, log_probs, states)

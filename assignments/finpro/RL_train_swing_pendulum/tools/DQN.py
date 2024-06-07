@@ -50,7 +50,7 @@ class DQNAgent:
         if random.random() < self.epsilon:
             # AttributeError: 'numpy.ndarray' object has no attribute 'low'
             # return random.uniform(action_space.low[0], action_space.high[0])
-            return random.uniform(-3, 3)
+            return random.uniform(-6, 6)
         else:
             state = torch.FloatTensor(state).unsqueeze(0)
             q_values = self.q_network(state)

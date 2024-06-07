@@ -159,6 +159,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
+*.png
 
 # ppt files
 *.ppt
@@ -193,7 +194,10 @@ local/
 current_ass/
 
 !SDM366_project.pdf
-/assignments/finpro/project1_state_estimation/outputs/
+assignments/finpro/project1_state_estimation/outputs/
+
 assignments/finpro/RL_train_pendulum_ethy_version/tools/__init__.py
+
+assignments/finpro/RL_train_swing_pendulum/outputs/
 
 *.h
