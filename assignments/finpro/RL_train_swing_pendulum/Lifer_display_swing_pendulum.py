@@ -60,58 +60,64 @@ def video_record(mujoco_model, mujoco_data, video_writer):
 
 if __name__ == "__main__":
     xml_path = "Lifer_inverted_swing_pendulum.xml"
-    model_path = "models/temp_1717794733_epoch_193.pth"
+    model_path = "models/temp_1717823155_epoch_300.pth"
     model, data = tools.init_mujoco(xml_path)
     window = init_glfw()
 
-    if_random_seed = 1
-    seed = random.randint(0, 100000) if if_random_seed else 2333
+    if_random_seed = 0
+    seed = random.randint(0, 100000) if if_random_seed else 39858
     print(f'The seed is: {seed}')
 
     if window:
-        obs_space_dims = 6
-        action_space_dims = model.nu
-        # print('nq: ', model.nq)
-        # print('nu: ', model.nu)
-        agent = tools.DQNAgent(obs_space_dims, action_space_dims, lr=3e-4, gamma=0.99)
-        agent.load_model(model_path)
-        total_num_episodes = int(10)
-        time_records = []
-        for episode in range(total_num_episodes):
-            # video_writer = cv2.VideoWriter(f"video_{episode}th.mp4", cv2.VideoWriter_fourcc(*'mp4v'), 30, (600, 480))
-            # rewards = []
-            # log_probs = []
-            # states = []
-            done = False
-            data.time = 0
-            print('The episode is:', episode)
-            # 重置环境到初始状态
-            mujoco.mj_resetData(model, data)
-            tools.random_state(data, seed)
-            while not done:
-                step_start = time.time()
-                state = tools.get_obs(data)
-                action = agent.sample_action(state)
-                data.ctrl[0] = action
-                mujoco.mj_step(model, data)
+        try:
+            obs_space_dims = 6
+            action_space_dims = model.nu
+            # print('nq: ', model.nq)
+            # print('nu: ', model.nu)
+            agent = tools.DQNAgent(obs_space_dims, action_space_dims, lr=3e-4, gamma=0.99)
+            agent.load_model(model_path)
+            total_num_episodes = int(10)
+            time_records = []
+            for episode in range(total_num_episodes):
+                # video_writer = cv2.VideoWriter(f"video_{episode}th.mp4", cv2.VideoWriter_fourcc(*'mp4v'), 30, (600, 480))
+                # rewards = []
+                # log_probs = []
+                # states = []
+                done = False
+                data.time = 0
+                print('The episode is:', episode)
+                # 重置环境到初始状态
+                mujoco.mj_resetData(model, data)
+                tools.random_state(data, seed)
+                while not done:
+                    step_start = time.time()
+                    state = tools.get_obs(data)
+                    action = agent.sample_action(state)
+                    data.ctrl[0] = action
+                    mujoco.mj_step(model, data)
 
-                # rewards.append(reward)
+                    # rewards.append(reward)
+                    # log_probs.append(log_prob)
+                    # states.append(state.copy())
+
+                    done = data.time > 450  # Example condition to end episode
+
+                    # video_record(model, data, video_writer) # uncommitted this to record video
+                    render(window, model, data)
+
                 # log_probs.append(log_prob)
-                # states.append(state.copy())
+                # agent.update(rewards, log_probs, states)
 
-                done = data.time > 450  # Example condition to end episode
+                time_records.append(data.time)
+                print(f'lasted for {data.time:.2f} seconds')
+                # video_writer.release()
 
-                # video_record(model, data, video_writer) # uncommitted this to record video
-                render(window, model, data)
+            print(f'max lasted {np.max(np.array(time_records)):.2f}s')
+            print(f'avg lasted {np.mean(np.array(time_records)):.2f}s')
 
-            # log_probs.append(log_prob)
-            # agent.update(rewards, log_probs, states)
-
-            time_records.append(data.time)
-            print(f'lasted for {data.time:.2f} seconds')
-            # video_writer.release()
-        print(f'max lasted {np.max(np.array(time_records)):.2f}s')
-        print(f'avg lasted {np.mean(np.array(time_records)):.2f}s')
+        except KeyboardInterrupt:
+            print('KeyboardInterrupt')
+            glfw.destroy_window(window)
 
         glfw.terminate()
         # agent.save_model(save_model_path)

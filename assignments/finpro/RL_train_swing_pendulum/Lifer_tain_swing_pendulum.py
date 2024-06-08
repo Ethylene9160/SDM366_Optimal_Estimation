@@ -43,7 +43,7 @@ if __name__ == "__main__":
     action_space_dims = model.nu
     agent = tools.DQNAgent(obs_space_dims, action_space_dims, lr=3e-4, gamma=0.99)
 
-    read_model_path = "models/temp_1717794733_epoch_193.pth"
+    read_model_path = "models/temp_1717823155_epoch_300.pth"
 
     os.makedirs(f"outputs/{current_time}", exist_ok=True)
 
