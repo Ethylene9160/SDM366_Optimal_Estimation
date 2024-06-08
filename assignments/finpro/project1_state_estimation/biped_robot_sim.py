@@ -216,6 +216,8 @@ class MuJoCoSim:
             if time_until_next_step > 0:
                 time.sleep(time_until_next_step)
 
+
+
     def estimate_base_lin_vel(self):
         """Estimate the base linear velocity."""
         # Information you might need for doing state estimation
@@ -231,9 +233,12 @@ class MuJoCoSim:
 
         # 得到在Body坐标系下的左右脚的位置
         BPL, BPR, BVL, BVR = z2x_getFootPosition(qpos_[:3], qpos_[3:6], qvel_[:3], qvel_[3:6], contact_info)
-        quat = quaternion.from_float_array(self.data.qpos.astype(np.double)[3:7])
+        quat = quaternion.from_float_array(self.data.sensor("imu_quat").data[[0,1,2,3]].astype(np.double))
+        quat = self.data.sensor("imu_quat").data[[0,1,2,3]].astype(np.double)
+        # quat = quaternion.from_float_array(self.data.qpos.astype(np.double)[3:7])
         z, rotation_ob = z2x_Obserbation(BPL, BPR, BVL, BVR, ang_vel.data, quat, contact_info)
         # 加速度从自身坐标系变换到世界坐标系
+        # rotation_ob = quaternion_to_rotation_matrix(self.data.sensor("imu_quat").data[[0,1,2,3]].astype(np.double))
         a = rotation_ob @ lin_acc.data + np.array([0, 0, -9.81])
         self.x, self.P = z2x_EKF(self.x, z, self.P, a, self.EKF_Q, self.EKF_R, contact_info)
         self.lastBPL, self.lastBPR = BPL, BPR
@@ -244,6 +249,14 @@ class MuJoCoSim:
         else:
             return self.x[3:6]  # TODO: implement your codes to estimate base linear velocity
 
+def quaternion_to_rotation_matrix(quat):
+    q0, q1, q2, q3 = quat
+    R = np.array([
+        [1 - 2 * (q2 ** 2 + q3 ** 2), 2 * (q1 * q2 - q0 * q3), 2 * (q1 * q3 + q0 * q2)],
+        [2 * (q1 * q2 + q0 * q3), 1 - 2 * (q1 ** 2 + q3 ** 2), 2 * (q2 * q3 - q0 * q1)],
+        [2 * (q1 * q3 - q0 * q2), 2 * (q2 * q3 + q0 * q1), 1 - 2 * (q1 ** 2 + q2 ** 2)]
+    ])
+    return R
 
 def z2x_EKF(x, z, P, u, Q, R, contact_info):
     # R 是测量协方差， Q是过程预测协方差，当处于摆动状态时，需要增大Q的方差，告诉模型现在过程不准
@@ -271,11 +284,6 @@ def z2x_EKF(x, z, P, u, Q, R, contact_info):
     A[0:3, 3:6] = np.eye(3) * timestep
     B = np.zeros([12, 3])
     B[3:6, :] = np.eye(3) * timestep
-    global z2x_x, z2x_v
-    z2x_x = 0
-    z2x_v = 0
-    z2x_v += u[0] * timestep
-    z2x_x += z2x_v * timestep
     x_hat = A @ x + B @ u
     P_hat = A @ P @ A.T + Q
     H = np.vstack((
@@ -293,7 +301,8 @@ def z2x_EKF(x, z, P, u, Q, R, contact_info):
 
 
 def z2x_Obserbation(BPL, BPR, BVL, BVR, W, quat, contact_info):
-    matrix_q = quaternion.as_rotation_matrix(quat)
+    # matrix_q = quaternion.as_rotation_matrix(quat)
+    matrix_q = quaternion_to_rotation_matrix(quat)
     z = np.concatenate((-matrix_q @ BPL,
                         -matrix_q @ BPR,  # error?
                         -matrix_q @ (np.cross(W, BPL) + BVL),

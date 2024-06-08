@@ -70,24 +70,22 @@ def init_mujoco(model_path):
 
 
 def get_obs(data):
-    # return np.concatenate(
-    #     [
-    #         data.qpos[:1],  # cart x pos
-    #         np.sin(data.qpos[1:]),  # link angles
-    #         np.cos(data.qpos[1:]),
-    #         np.clip(data.qvel, -10, 10),
-    #         np.clip(data.qfrc_constraint, -10, 10),
-    #     ]
-    # ).ravel()
-    if data.qpos[1] > np.pi:
-        data.qpos[1] -= 2*np.pi
-    elif data.qpos[1] < -np.pi:
-        data.qpos[1] += 2*np.pi
+    '''
+    obs[0]: position of cart
+    obs[1]: v of cart
+    obs[2]: angle
+    obs[3]: sin(angle)
+    obs[4]: cos(angle)
+    '''
+    # if data.qpos[1] > np.pi:
+    #     data.qpos[1] -= 2*np.pi
+    # elif data.qpos[1] < -np.pi:
+    #     data.qpos[1] += 2*np.pi
     return np.concatenate(
         [
-            data.qpos,
-            data.qvel
-            # np.sin(data.qpos[1:]),
-            # np.cos(data.qpos[1:])
+            data.qpos[:1],
+            data.qvel,
+            np.sin(data.qpos[1:]),
+            np.cos(data.qpos[1:])
         ]
     ).ravel()
