@@ -60,11 +60,12 @@ def video_record(mujoco_model, mujoco_data, video_writer):
 
 if __name__ == "__main__":
     xml_path = "Lifer_inverted_swing_pendulum.xml"
-    model_path = "models/temp_1717823155_epoch_300.pth"
+    model_path = "models/temp_1717904783_epoch_4968.pth"
+    # model_path = "models_v2/temp_1717904774_epoch_4224.pth"
     model, data = tools.init_mujoco(xml_path)
     window = init_glfw()
 
-    if_random_seed = 0
+    if_random_seed = 1
     seed = random.randint(0, 100000) if if_random_seed else 39858
     print(f'The seed is: {seed}')
 
@@ -79,7 +80,7 @@ if __name__ == "__main__":
             total_num_episodes = int(10)
             time_records = []
             for episode in range(total_num_episodes):
-                # video_writer = cv2.VideoWriter(f"video_{episode}th.mp4", cv2.VideoWriter_fourcc(*'mp4v'), 30, (600, 480))
+
                 # rewards = []
                 # log_probs = []
                 # states = []

@@ -199,5 +199,6 @@ assignments/finpro/project1_state_estimation/outputs/
 assignments/finpro/RL_train_pendulum_ethy_version/tools/__init__.py
 
 assignments/finpro/RL_train_swing_pendulum/outputs/
+assignments/finpro/RL_train_swing_pendulum/outputs*/
 
 *.h

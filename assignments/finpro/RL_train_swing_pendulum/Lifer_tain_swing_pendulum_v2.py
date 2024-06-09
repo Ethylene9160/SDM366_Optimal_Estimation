@@ -12,26 +12,16 @@ import tools
 
 
 # Environment reward function
-def calculate_reward(state_list):
+def calculate_reward(state_list, last_action):
     """Calculate the reward based on the given state and done flag."""
     x, theta, sin_theta, cos_theta, x_dot, theta_dot = state_list
 
     # calculate theta in [-pi, pi] by sin and cos
     theta = np.arctan2(sin_theta, cos_theta)
 
-    if abs(theta) >= 0.75:
-        r = -(0.2 * x ** 2 + 0.6 * theta ** 2 - 0.005 * theta_dot ** 2)
-        if abs(x) >= 1:
-            r -= 10
-    else:
-        r = -(0.4 * x ** 2 + 0.6 * theta ** 2 + 0.001 * theta_dot ** 2)
+    r = -0.5 * (5 * theta ** 2 + x ** 2 + 0.01 * last_action ** 2)
 
-    if abs(theta) >= 0.35 and (x_dot * theta) > 0:
-        r -= 0.01 * x_dot ** 2
-        if abs(x) >= 0.5:
-            r -= 1
     return r
-
 
 
 if __name__ == "__main__":
@@ -44,9 +34,9 @@ if __name__ == "__main__":
     action_space_dims = model.nu
     agent = tools.DQNAgent(obs_space_dims, action_space_dims, lr=3e-4, gamma=0.99)
 
-    read_model_path = "models/temp_1717851834_epoch_454.pth"
+    read_model_path = ""
 
-    os.makedirs(f"outputs/{current_time}", exist_ok=True)
+    os.makedirs(f"outputs_v2/{current_time}", exist_ok=True)
 
     try:
         agent.load_model(read_model_path)
@@ -74,6 +64,7 @@ if __name__ == "__main__":
             mujoco.mj_resetData(model, data)
             seed = random.randint(0, 10000)
             tools.random_state(data, seed)
+            action_episode = 0.0
 
             while not done:
                 state = tools.get_obs_lifer(data)
@@ -81,17 +72,19 @@ if __name__ == "__main__":
                 data.ctrl[0] = action
                 mujoco.mj_step(model, data)
 
+                action_episode = action
+
                 next_state = tools.get_obs_lifer(data)
                 done = data.time > 45  # Example condition to end episode
 
-                reward = calculate_reward(next_state)
+                reward = calculate_reward(next_state, action)
 
                 agent.store_transition(state, action, reward, next_state, done)
                 agent.update()
 
                 state = next_state
 
-            reward_episode = calculate_reward(tools.get_obs_lifer(data))
+            reward_episode = calculate_reward(tools.get_obs_lifer(data), action_episode)
             reward_list.append(reward_episode)
             print(f"Episode {episode} ended with reward {reward_episode}.")
 
@@ -99,14 +92,14 @@ if __name__ == "__main__":
             episode_interrupted += 1
 
             if episode % auto_save_epochs == 0:
-                agent.save_model(f"outputs/{current_time}/temp_{int(time.time())}_epoch_{episode}.pth")
+                agent.save_model(f"outputs_v2/{current_time}/temp_{int(time.time())}_epoch_{episode}.pth")
 
             # if reward_episode > max reward in reward_list, save model
             if reward_episode >= max(reward_list):
                 episode_of_best_reward = episode
-                agent.save_model(f"outputs/{current_time}/best_reward_temp_model.pth")
+                agent.save_model(f"outputs_v2/{current_time}/best_reward_temp_model.pth")
 
-        agent.save_model(f"outputs/{current_time}/model_{int(time.time())}_epoch_{episode}.pth")
+        agent.save_model(f"outputs_v2/{current_time}/model_{int(time.time())}_epoch_{episode}.pth")
         print(f"Training completed. Model saved.")
         print(f"Best reward: {max(reward_list)} at episode {episode_of_best_reward}.")
 
@@ -114,11 +107,11 @@ if __name__ == "__main__":
         plt.xlabel('Episode')
         plt.ylabel('Reward')
         plt.title('Reward Curve')
-        plt.savefig(f"outputs/{current_time}/reward_curve.png")
+        plt.savefig(f"outputs_v2/{current_time}/reward_curve.png")
         # plt.show()
 
     except KeyboardInterrupt:
-        agent.save_model(f"outputs/{current_time}/temp_{int(time.time())}_epoch_{episode_interrupted}.pth")
+        agent.save_model(f"outputs_v2/{current_time}/temp_{int(time.time())}_epoch_{episode_interrupted}.pth")
         print("Training interrupted. Model saved.")
         print(f"Best reward: {max(reward_list)} at episode {episode_of_best_reward}.")
 
@@ -126,5 +119,5 @@ if __name__ == "__main__":
         plt.xlabel('Episode')
         plt.ylabel('Reward')
         plt.title('Reward Curve')
-        plt.savefig(f"outputs/{current_time}/reward_curve.png")
+        plt.savefig(f"outputs_v2/{current_time}/reward_curve.png")
         # plt.show()

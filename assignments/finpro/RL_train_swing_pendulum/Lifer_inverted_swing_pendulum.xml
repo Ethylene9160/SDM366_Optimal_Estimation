@@ -17,11 +17,11 @@
                   type="capsule"/>
             <body name="pole" pos="0 0 0">
                 <joint axis="0 1 0" name="hinge" pos="0 0 0" range="-inf inf" type="hinge"/>
-                <geom fromto="0 0 0 0 0 -0.6" name="cpole" rgba="1 0.7137 0.7569 0.75" size="0.049 0.3" type="capsule"/>
+                <geom fromto="0 0 0 0 0 0.6" name="cpole" rgba="1 0.7137 0.7569 0.75" size="0.049 0.3" type="capsule"/>
             </body>
         </body>
     </worldbody>
     <actuator>
-        <motor ctrllimited="true" ctrlrange="-6 6" gear="100" joint="slider" name="slide"/>
+        <motor ctrllimited="true" ctrlrange="-5 5" gear="100" joint="slider" name="slide"/>
     </actuator>
 </mujoco>

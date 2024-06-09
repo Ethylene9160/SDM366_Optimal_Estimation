@@ -76,9 +76,9 @@ def init_mujoco(model_path):
 def random_state(data, seed=2333):
     np.random.seed(seed)
     init_x = np.random.uniform(-0.1, 0.1)
-    init_theta = np.random.uniform(-0.1, 0.1)
-    init_v = np.random.uniform(-0.1, 0.1)
-    init_omega = np.random.uniform(-0.1, 0.1)
+    init_theta = np.random.uniform(-0.1, 0.1) - np.pi
+    init_v = np.random.uniform(-0.01, 0.01)
+    init_omega = np.random.uniform(-0.01, 0.01)
     data.qpos[0] = init_x
     data.qpos[1] = init_theta
     data.qvel[0] = init_v
