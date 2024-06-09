@@ -97,13 +97,13 @@ if __name__ == "__main__":
                         agent = swing_agent
                         print('swing')
 
-                # with viewer.lock():
-                #     viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = int(data.time % 2)
-                # viewer.sync()
-                #
-                # time_until_next_step = model.opt.timestep - (time.time() - step_start)
-                # if time_until_next_step > 0:
-                #     time.sleep(time_until_next_step)
+                with viewer.lock():
+                    viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = int(data.time % 2)
+                viewer.sync()
+
+                time_until_next_step = model.opt.timestep - (time.time() - step_start)
+                if time_until_next_step > 0:
+                    time.sleep(time_until_next_step)
                 i += 1
                 # if i % 100 == 0:
                 #     print(f'state: {state}, action: {action}, next_state: {next_state}')
