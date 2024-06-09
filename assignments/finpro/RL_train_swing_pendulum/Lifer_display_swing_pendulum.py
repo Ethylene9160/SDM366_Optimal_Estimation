@@ -60,7 +60,7 @@ def video_record(mujoco_model, mujoco_data, video_writer):
 
 if __name__ == "__main__":
     xml_path = "Lifer_inverted_swing_pendulum.xml"
-    model_path = "models/temp_1717823155_epoch_300.pth"
+    model_path = "outputs/2024-06-08-16-41-13/temp_1717836651_epoch_101.pth"
     model, data = tools.init_mujoco(xml_path)
     window = init_glfw()
 

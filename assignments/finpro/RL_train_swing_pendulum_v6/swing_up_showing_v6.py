@@ -24,56 +24,55 @@ def show_rewards(rewards, folder_name):
     plt.show()
 
 import tools
-
 if __name__ == "__main__":
     xml_path = "inverted_swing_pendulum.xml"
     current_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 
     model, data = tools.init_mujoco(xml_path)
 
-    obs_space_dims = 5
+    obs_space_dims = 6
     action_space_dims = model.nu
-    agent = tools.A2CAgent(obs_space_dims, action_space_dims, lr=3e-4, gamma = 0.98)
-    model_path = ""
-    read_model_path = "2024-06-08-16-42-40/autosave.pth"
-    save_model_path = "new_a2c_policy_v2.pth"
+    # action_space = [-15.0, -5.0, -1.2, 0, 1.2, 5.0, 15.0]
+    action_space = [-15.0, -5.0, -1.2, -0.4, 0, 0.4, 1.2, 5.0, 15.0]
+    agent = tools.DQNAgent(obs_space_dims, action_space, gamma=0.98)
+    read_model_path = "2024-06-09-19-52-19/temp_model_save_at_epoch_10.pth"
+    # save_model_path = "swing_up.pth"
     try:
         agent.load_model(read_model_path)
     except FileNotFoundError:
         print(f"No saved model found at {read_model_path}. Starting from scratch.")
 
-    auto_save_epochs = 200
-
     total_rewards = []
+
     # create viewer
     with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
-        total_num_episodes = int(500)
+        total_num_episodes = int(1000)
         episode = 0
         while viewer.is_running() and episode < total_num_episodes:
             rewards = []
-            log_probs = []
             states = []
+            actions = []
+            next_states = []
+            dones = []
             done = False
             data.time = 0
             print('The episode is:', episode)
 
             # 重置环境到初始状态
             mujoco.mj_resetData(model, data)
-            # data.qpos[1] = -np.pi
+            data.qpos[1] = -np.pi
             alive_bonus = 100.0
-            xlim = 2.45
+            xlim = 1.5
+            i = 0
+            state = tools.get_obs(data)
             while not done:
                 step_start = time.time()
-                state = tools.get_obs(data)
-                action, log_prob = agent.sample_action(state)
+                action_idx = agent.sample_action(state)
+                action = action_space[action_idx]
                 data.ctrl[0] = action
                 mujoco.mj_step(model, data)
+                next_state = tools.get_obs(data)
 
-                done = data.time > 20 # Example condition to end episode
-
-                ####################################
-                ### commit the following line to speed up the training
-                ####################################
                 with viewer.lock():
                     viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = int(data.time % 2)
                 viewer.sync()
@@ -81,8 +80,9 @@ if __name__ == "__main__":
                 time_until_next_step = model.opt.timestep - (time.time() - step_start)
                 if time_until_next_step > 0:
                     time.sleep(time_until_next_step)
-                ####################################
-                ####################################
+                i += 1
+                if i % 100 == 0:
+                    print(f'state: {state}, action: {action}, next_state: {next_state}')
+                done = data.time > 25 # Example condition to end episode
+                state = next_state
             episode += 1
-
-

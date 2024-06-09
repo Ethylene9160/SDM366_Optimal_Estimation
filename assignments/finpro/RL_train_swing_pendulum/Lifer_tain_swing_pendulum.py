@@ -43,7 +43,7 @@ if __name__ == "__main__":
     action_space_dims = model.nu
     agent = tools.DQNAgent(obs_space_dims, action_space_dims, lr=3e-4, gamma=0.99)
 
-    read_model_path = "models/temp_1717823155_epoch_300.pth"
+    read_model_path = "outputs/2024-06-08-16-27-08/temp_1717835950_epoch_138.pth"
 
     os.makedirs(f"outputs/{current_time}", exist_ok=True)
 
@@ -52,14 +52,14 @@ if __name__ == "__main__":
     except FileNotFoundError:
         print(f"No saved model found at {read_model_path}. Starting from scratch.")
 
-    auto_save_epochs = 100
+    auto_save_epochs = 101
     episode_interrupted = 0
     reward_list = []
 
     try:
         # create viewer
         # with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
-        total_num_episodes = int(20000)
+        total_num_episodes = int(200)
         episode = 0
 
         # while viewer.is_running() and episode < total_num_episodes:
@@ -104,8 +104,8 @@ if __name__ == "__main__":
         plt.xlabel('Episode')
         plt.ylabel('Reward')
         plt.title('Reward Curve')
-        plt.savefig(f"outputs/{current_time}/reward_curve.png")
-        # plt.show()
+        plt.savefig(f"outputs/{current_time}/reward_curve.eps", format="eps")
+        plt.show()
 
     except KeyboardInterrupt:
         agent.save_model(f"outputs/{current_time}/temp_{int(time.time())}_epoch_{episode_interrupted}.pth")
@@ -115,5 +115,5 @@ if __name__ == "__main__":
         plt.xlabel('Episode')
         plt.ylabel('Reward')
         plt.title('Reward Curve')
-        plt.savefig(f"outputs/{current_time}/reward_curve.png")
-        # plt.show()
+        plt.savefig(f"outputs/{current_time}/reward_curve.eps", format="eps")
+        plt.show()
