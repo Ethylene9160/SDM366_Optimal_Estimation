@@ -23,7 +23,7 @@ def calculate_reward_a(state_list):
     # if abs(theta) >= 0.15 or abs(x) >= 0.5:
     #     r = -1.0
 
-    p = 0.8 * x ** 2 + 0.001 * x_dot ** 2 + 0.1 * theta_dot ** 2
+    p = 0.8 * theta ** 2 + 0.001 * theta_dot ** 2 + 0.1 * x_dot ** 2
     r = 1.0 - p
 
     return r
@@ -38,16 +38,21 @@ def calculate_reward_b(state_list):
     theta = np.arctan2(sin_theta, cos_theta)
 
     if abs(theta) >= 0.75:
-        r = -(0.2 * x ** 2 + 0.6 * theta ** 2 - 0.005 * theta_dot ** 2)
-        if abs(x) >= 1:
-            r -= 10
+        r = -(0.2 * x ** 2 + 0.6 * theta ** 2 - 0.001 * theta_dot ** 2)
     else:
-        r = -(0.4 * x ** 2 + 0.6 * theta ** 2 + 0.001 * theta_dot ** 2)
+        r = -(0.1 * x ** 2 + 0.6 * theta ** 2 + 0.001 * theta_dot ** 2)
 
-    if abs(theta) >= 0.35 and (x_dot * theta) > 0:
-        r -= 0.01 * x_dot ** 2
-        if abs(x) >= 0.5:
-            r -= 1
+    if abs(x) < 0.75 and abs(theta) < 0.3 and abs(x_dot) < 0.8 and abs(theta_dot) < 0.8:
+        r += 10
+        if abs(x) < 0.55:
+            r += 2 * (2 - abs(theta)) ** 2
+
+    if abs(x) > 0.75:
+        r -= 10
+
+    if abs(x) > 1.25:
+        r -= 40
+
     return r
 
 
@@ -64,12 +69,12 @@ if __name__ == "__main__":
 
     agent_a = tools.DQNAgent(obs_space_dims, action_space_dims, lr=1e-4, gamma=0.99)
 
-    read_model_b_path = "models/temp_1717904783_epoch_4968.pth"
+    read_model_b_path = "models_v3/b/temp_1717957005_epoch_20000.pth"
 
-    read_model_a_path = ""
+    read_model_a_path = "models_v3/a/temp_1717957005_epoch_20000.pth"
 
-    os.makedirs(f"outputs/{current_time}/a", exist_ok=True)
-    os.makedirs(f"outputs/{current_time}/b", exist_ok=True)
+    os.makedirs(f"outputs_v3/{current_time}/a", exist_ok=True)
+    os.makedirs(f"outputs_v3/{current_time}/b", exist_ok=True)
 
     try:
         agent_a.load_model(read_model_a_path)
@@ -81,7 +86,7 @@ if __name__ == "__main__":
     except FileNotFoundError:
         print(f"No saved model b found at {read_model_b_path}. Starting from scratch.")
 
-    auto_save_epochs = 100
+    auto_save_epochs = 1000
     episode_interrupted = 0
     episode_of_best_reward = 0
     reward_list = []
@@ -89,7 +94,7 @@ if __name__ == "__main__":
     try:
         # create viewer
         # with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
-        total_num_episodes = int(20000)
+        total_num_episodes = int(200000)
         episode = 0
 
         # while viewer.is_running() and episode < total_num_episodes:
@@ -105,16 +110,16 @@ if __name__ == "__main__":
 
             while not done:
                 state = tools.get_obs_lifer(data)
-
                 state_theta = np.arctan2(state[2], state[3])
-                if abs(state_theta) < 0.15:
+
+                if abs(state_theta) < 0.23:
                     action = agent_a.sample_action(state)
                     data.ctrl[0] = action
 
                     mujoco.mj_step(model, data)
 
                     next_state = tools.get_obs_lifer(data)
-                    done = data.time > 30  # Example condition to end episode
+                    done = data.time > 30 or abs(next_state[0]) > 1.45
                     reward = calculate_reward_a(next_state)
 
                     agent_a.store_transition(state, action, reward, next_state, done)
@@ -128,7 +133,7 @@ if __name__ == "__main__":
                     mujoco.mj_step(model, data)
 
                     next_state = tools.get_obs_lifer(data)
-                    done = data.time > 30
+                    done = data.time > 30 or abs(next_state[0]) > 1.25
                     reward = calculate_reward_b(next_state)
 
                     agent_b.store_transition(state, action, reward, next_state, done)

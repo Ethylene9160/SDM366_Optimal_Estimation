@@ -60,8 +60,8 @@ def video_record(mujoco_model, mujoco_data, video_writer):
 
 if __name__ == "__main__":
     xml_path = "Lifer_inverted_swing_pendulum.xml"
-    model_path = "models/temp_1717904783_epoch_4968.pth"
-    # model_path = "models_v2/temp_1717904774_epoch_4224.pth"
+    model_path_a = "models_v3/a/temp_1717957005_epoch_20000.pth"
+    model_path_b = "models_v3/b/temp_1717957005_epoch_20000.pth"
     model, data = tools.init_mujoco(xml_path)
     window = init_glfw()
 
@@ -75,10 +75,15 @@ if __name__ == "__main__":
             action_space_dims = model.nu
             # print('nq: ', model.nq)
             # print('nu: ', model.nu)
-            agent = tools.DQNAgent(obs_space_dims, action_space_dims, lr=3e-4, gamma=0.99)
-            agent.load_model(model_path)
+            agent_a = tools.DQNAgent(obs_space_dims, action_space_dims, lr=3e-4, gamma=0.99)
+            agent_a.load_model(model_path_a)
+
+            agent_b = tools.DQNAgent(obs_space_dims, action_space_dims, lr=3e-4, gamma=0.99)
+            agent_b.load_model(model_path_b)
+
             total_num_episodes = int(10)
             time_records = []
+
             for episode in range(total_num_episodes):
 
                 # rewards = []
@@ -93,8 +98,18 @@ if __name__ == "__main__":
                 while not done:
                     step_start = time.time()
                     state = tools.get_obs_lifer(data)
-                    action = agent.sample_action(state)
-                    data.ctrl[0] = action
+                    state_theta = np.arctan2(state[2], state[3])
+
+                    x, theta, sin_theta, cos_theta, x_dot, theta_dot = state
+                    if abs(x) < 0.55 and abs(theta) < 0.23 and abs(x_dot) < 0.8 and abs(theta_dot) < 0.8:
+                        print('The state is:', state)
+
+                    if abs(state_theta) < 0.23:
+                        action = agent_a.sample_action(state)
+                        data.ctrl[0] = action
+                    else:
+                        action = agent_b.sample_action(state)
+                        data.ctrl[0] = action
                     mujoco.mj_step(model, data)
 
                     # rewards.append(reward)
@@ -113,13 +128,8 @@ if __name__ == "__main__":
                 print(f'lasted for {data.time:.2f} seconds')
                 # video_writer.release()
 
-            print(f'max lasted {np.max(np.array(time_records)):.2f}s')
-            print(f'avg lasted {np.mean(np.array(time_records)):.2f}s')
-
         except KeyboardInterrupt:
             print('KeyboardInterrupt')
             glfw.destroy_window(window)
 
         glfw.terminate()
-        # agent.save_model(save_model_path)
-        # tools.save_model(agent, save_model_path)

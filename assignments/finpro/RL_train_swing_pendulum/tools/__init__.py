@@ -1,17 +1,18 @@
 from __future__ import annotations
 
 import os
-import torch.optim as optim
+import random
+
+import gymnasium as gym
+import mujoco
+import mujoco.viewer
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.distributions.normal import Normal
-import mujoco
-import mujoco.viewer
+from gymnasium import spaces
 
 from . import A2C
 from . import DQN
-
 from .A2C import A2CAgent
 from .DQN import DQNAgent
 
@@ -29,6 +30,43 @@ def load_model(model: nn.Module, path: str):
         model.eval()
     else:
         print(f"No model found at {path}")
+
+
+class CustomEnv(gym.Env):
+    def __init__(self, model, data, reward_function, max_time=45, x_threshold=1.45):
+        super(CustomEnv, self).__init__()
+        self.model = model
+        self.data = data
+        self.reward_function = reward_function
+        self.max_time = max_time
+        self.x_threshold = x_threshold
+
+        # Define action and observation space
+        self.action_space = spaces.Box(low=-1, high=1, shape=(model.nu,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(6,), dtype=np.float32)
+
+    def step(self, action):
+        self.data.ctrl[0] = action
+        mujoco.mj_step(self.model, self.data)
+        state = self._get_obs()
+        reward = self.reward_function(state, action)
+        done = self.data.time > self.max_time or abs(state[0]) > self.x_threshold
+        return state, reward, done, {}
+
+    def reset(self):
+        mujoco.mj_resetData(self.model, self.data)
+        seed = random.randint(0, 10000)
+        random_state(self.data, seed)
+        return self._get_obs()
+
+    def _get_obs(self):
+        return get_obs_lifer(self.data)
+
+    def render(self, mode='human'):
+        pass
+
+    def close(self):
+        pass
 
 
 class Policy_Network(nn.Module):
@@ -96,9 +134,9 @@ def get_obs(data):
     #     ]
     # ).ravel()
     if data.qpos[1] > np.pi:
-        data.qpos[1] -= 2*np.pi
+        data.qpos[1] -= 2 * np.pi
     elif data.qpos[1] < -np.pi:
-        data.qpos[1] += 2*np.pi
+        data.qpos[1] += 2 * np.pi
     return np.concatenate(
         [
             data.qpos,
@@ -107,6 +145,7 @@ def get_obs(data):
             # np.cos(data.qpos[1:])
         ]
     ).ravel()
+
 
 def get_obs_lifer(data):
     """获取环境的观测状态."""

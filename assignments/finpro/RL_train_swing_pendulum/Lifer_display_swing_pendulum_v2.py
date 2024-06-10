@@ -60,8 +60,7 @@ def video_record(mujoco_model, mujoco_data, video_writer):
 
 if __name__ == "__main__":
     xml_path = "Lifer_inverted_swing_pendulum.xml"
-    model_path = "models/temp_1717904783_epoch_4968.pth"
-    # model_path = "models_v2/temp_1717904774_epoch_4224.pth"
+    model_path = "models_v2/temp_1717904774_epoch_4224.pth"
     model, data = tools.init_mujoco(xml_path)
     window = init_glfw()
 
@@ -73,8 +72,6 @@ if __name__ == "__main__":
         try:
             obs_space_dims = 6
             action_space_dims = model.nu
-            # print('nq: ', model.nq)
-            # print('nu: ', model.nu)
             agent = tools.DQNAgent(obs_space_dims, action_space_dims, lr=3e-4, gamma=0.99)
             agent.load_model(model_path)
             total_num_episodes = int(10)
@@ -106,9 +103,6 @@ if __name__ == "__main__":
                     # video_record(model, data, video_writer) # uncommitted this to record video
                     render(window, model, data)
 
-                # log_probs.append(log_prob)
-                # agent.update(rewards, log_probs, states)
-
                 time_records.append(data.time)
                 print(f'lasted for {data.time:.2f} seconds')
                 # video_writer.release()
@@ -121,5 +115,3 @@ if __name__ == "__main__":
             glfw.destroy_window(window)
 
         glfw.terminate()
-        # agent.save_model(save_model_path)
-        # tools.save_model(agent, save_model_path)
