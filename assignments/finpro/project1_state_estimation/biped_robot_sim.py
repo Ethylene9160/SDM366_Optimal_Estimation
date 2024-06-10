@@ -103,6 +103,7 @@ class MuJoCoSim:
         self.EKF_Q[3:6, 3:6] = np.eye(3) * timestep * 0.02 * 9.8 / 20
         self.EKF_Q[6:9, 6:9] = np.eye(3) * timestep * 0.02
         self.EKF_Q[9:12, 9:12] = np.eye(3) * timestep * 0.02
+        # self.EKF_Q[6:,6:] = np.eye(6)
 
         self.EKF_R = np.zeros((14, 14))
         self.EKF_R[:6, :6] = np.eye(6) * 0.01
@@ -234,11 +235,8 @@ class MuJoCoSim:
         # 得到在Body坐标系下的左右脚的位置
         BPL, BPR, BVL, BVR = z2x_getFootPosition(qpos_[:3], qpos_[3:6], qvel_[:3], qvel_[3:6], contact_info)
         quat = quaternion.from_float_array(self.data.sensor("imu_quat").data[[0,1,2,3]].astype(np.double))
-        quat = self.data.sensor("imu_quat").data[[0,1,2,3]].astype(np.double)
-        # quat = quaternion.from_float_array(self.data.qpos.astype(np.double)[3:7])
-        z, rotation_ob = z2x_Obserbation(BPL, BPR, BVL, BVR, ang_vel.data, quat, contact_info)
+        z, rotation_ob = z2x_Obserbation(BPL, BPR, BVL, BVR, ang_vel.data, quat, contact_info, self.x[3:6])
         # 加速度从自身坐标系变换到世界坐标系
-        # rotation_ob = quaternion_to_rotation_matrix(self.data.sensor("imu_quat").data[[0,1,2,3]].astype(np.double))
         a = rotation_ob @ lin_acc.data + np.array([0, 0, -9.81])
         self.x, self.P = z2x_EKF(self.x, z, self.P, a, self.EKF_Q, self.EKF_R, contact_info)
         self.lastBPL, self.lastBPR = BPL, BPR
@@ -249,37 +247,45 @@ class MuJoCoSim:
         else:
             return self.x[3:6]  # TODO: implement your codes to estimate base linear velocity
 
-def quaternion_to_rotation_matrix(quat):
-    q0, q1, q2, q3 = quat
-    R = np.array([
-        [1 - 2 * (q2 ** 2 + q3 ** 2), 2 * (q1 * q2 - q0 * q3), 2 * (q1 * q3 + q0 * q2)],
-        [2 * (q1 * q2 + q0 * q3), 1 - 2 * (q1 ** 2 + q3 ** 2), 2 * (q2 * q3 - q0 * q1)],
-        [2 * (q1 * q3 - q0 * q2), 2 * (q2 * q3 + q0 * q1), 1 - 2 * (q1 ** 2 + q2 ** 2)]
-    ])
-    return R
 
 def z2x_EKF(x, z, P, u, Q, R, contact_info):
     # R 是测量协方差， Q是过程预测协方差，当处于摆动状态时，需要增大Q的方差，告诉模型现在过程不准
-    if contact_info[0] == 0:
-        Q[6:9, 6:9] = np.eye(3) * timestep * 1e10 * 0.02 / 20
-        R[0:3, 0:3] = np.eye(3) * 0.01 * 1e10
-        R[6:9, 6:9] = np.eye(3) * 0.01 * 1e10
-        R[12, 12] = np.eye(1) * 0.01 * 1e10
-        Q[9:12, 9:12] = np.eye(3) * timestep * 0.02 / 20
-        R[3:6, 3:6] = np.eye(3) * 0.01
-        R[9:12, 9:12] = np.eye(3) * 0.01
-        R[13, 13] = np.eye(1) * 0.01
-    if contact_info[1] == 0:
-        Q[9:12, 9:12] = np.eye(3) * timestep * 1e10 * 0.02 / 20
-        R[3:6, 3:6] = np.eye(3) * 0.01 * 1e10
-        R[9:12, 9:12] = np.eye(3) * 0.01 * 1e10
-        R[13, 13] = np.eye(1) * 0.01 * 1e10
-        Q[6:9, 6:9] = np.eye(3) * timestep * 0.02 / 20
-        R[0:3, 0:3] = np.eye(3) * 0.01
-        R[6:9, 6:9] = np.eye(3) * 0.01
-        R[12, 12] = np.eye(1) * 0.01
-    R = R * 1e10
-
+    # large_R = np.eye(3)*1e8
+    # small_R = 0.01*np.eye(3)
+    # if contact_info[0] == 0:
+    #     Q[6:9, 6:9] = np.eye(3) * timestep * 1e10
+    #     Q[9:12, 9:12] = np.eye(3) * timestep
+    #     # R[0:3, 0:3] = np.eye(3) * 0.01 * 1e10
+    #     R[0:3,0:3] = large_R
+    #     # R[6:9, 6:9] = np.eye(3) * 0.01 * 1e10
+    #     R[6:9,6:9] = small_R
+    #     R[12, 12] = np.eye(1) * 0.01 * 1e10
+    #     R[3:6, 3:6] = np.eye(3) * 0.01
+    #     # R[9:12, 9:12] = np.eye(3) * 0.01
+    #     R[9:12, 9:12] = large_R
+    #     R[13, 13] = np.eye(1) * 0.01
+    # if contact_info[1] == 0:
+    #     Q[6:9, 6:9] = np.eye(3) * timestep
+    #     Q[9:12, 9:12] = np.eye(3) * timestep * 1e10
+    #     R[3:6, 3:6] = np.eye(3) * 0.01 * 1e10
+    #     # R[9:12, 9:12] = np.eye(3) * 0.01 * 1e10
+    #     R[9:12, 9:12] = small_R
+    #     R[13, 13] = np.eye(1) * 0.01 * 1e10
+    #     R[0:3, 0:3] = np.eye(3) * 0.01
+    #     # R[6:9, 6:9] = np.eye(3) * 0.01
+    #     R[6:9, 6:9] = large_R
+    #     R[12, 12] = np.eye(1) * 0.01
+    for i in range(2):
+        Q[6 + i * 3: 6 + (i + 1) * 3, 6 + i * 3: 6 + (i + 1) * 3] = (1 + (
+                1 - contact_info[i]) * 1e10) * timestep * 0.01 * np.eye(3)
+        R[i * 3: (i + 1) * 3, i * 3: (i + 1) * 3] = (1 + (
+                1 - contact_info[i]) * 1e10) * 0.01 * np.eye(3)
+        R[6 + i * 3: 6 + (i + 1) * 3,6 + i * 3: 6 + (i + 1) * 3] = (1 +
+                (contact_info[i]) * 1e10) * 0.01 * np.eye(3)
+    # 取消使用脚的z坐标来预测，协方差拉满。
+    R[12:12] = 1e8
+    R[13:13] = 1e8
+    # R *= 1e5
     A = np.eye(12)
     A[0:3, 3:6] = np.eye(3) * timestep
     B = np.zeros([12, 3])
@@ -300,13 +306,23 @@ def z2x_EKF(x, z, P, u, Q, R, contact_info):
     return x, P
 
 
-def z2x_Obserbation(BPL, BPR, BVL, BVR, W, quat, contact_info):
-    # matrix_q = quaternion.as_rotation_matrix(quat)
-    matrix_q = quaternion_to_rotation_matrix(quat)
+def z2x_Obserbation(BPL, BPR, BVL, BVR, W, quat, contact_info, v_pcom):
+    matrix_q = quaternion.as_rotation_matrix(quat)
+    trust_L, trust_R = contact_info
+    v_1 = ((1 - trust_L) * v_pcom.reshape(3, 1) +
+           trust_L * (-matrix_q @ (
+                    np.cross(W.reshape(1,3), BPL.reshape(1,3)).reshape(3,1) + BVL.reshape(3,1)
+            )).reshape(3,1))
+    v_2 = ((1 - trust_R) * v_pcom.reshape(3, 1) +
+           trust_R * ( -matrix_q @ (
+                    np.cross(W.reshape(1,3), BPR.reshape(1,3)).reshape(3,1) + BVR.reshape(3,1)
+            )).reshape(3,1))
     z = np.concatenate((-matrix_q @ BPL,
                         -matrix_q @ BPR,  # error?
-                        -matrix_q @ (np.cross(W, BPL) + BVL),
-                        -matrix_q @ (np.cross(W, BPR) + BVR),
+                        v_1.reshape((3,)),
+                        v_2.reshape((3,)),
+                        # -matrix_q @ (np.cross(W, BPL) + BVL),
+                        # -matrix_q @ (np.cross(W, BPR) + BVR),
                         np.array([0.037062]),
                         np.array([0.037062])
                         ), axis=0)
@@ -345,13 +361,13 @@ def z2x_getFootPosition(leftP, rightP, leftV, rightV, contact):
     v_foot_R = J_foot_R[:3, :] @ qvel  # 提取线速度部分
 
     foot_L_pos_body = foot_L_to_base.translation
-    foot_L_pos_body = np.array([-foot_L_pos_body[1], -foot_L_pos_body[0], foot_L_pos_body[2]])
+    # foot_L_pos_body = np.array([-foot_L_pos_body[1], -foot_L_pos_body[0], foot_L_pos_body[2]])
     foot_R_pos_body = foot_R_to_base.translation
-    foot_R_pos_body = np.array([foot_R_pos_body[1], foot_R_pos_body[0], foot_R_pos_body[2]])
+    # foot_R_pos_body = np.array([foot_R_pos_body[1], foot_R_pos_body[0], foot_R_pos_body[2]])
     v_foot_L_body = foot_L_to_base.rotation @ v_foot_L
-    v_foot_L_body = np.array([v_foot_L_body[1], v_foot_L_body[0], v_foot_L_body[2]])
+    # v_foot_L_body = np.array([v_foot_L_body[1], v_foot_L_body[0], v_foot_L_body[2]])
     v_foot_R_body = foot_R_to_base.rotation @ v_foot_R
-    v_foot_R_body = np.array([v_foot_R_body[1], v_foot_R_body[0], v_foot_R_body[2]])
+    # v_foot_R_body = np.array([v_foot_R_body[1], v_foot_R_body[0], v_foot_R_body[2]])
     # 输出结果是[3,]维度
     return foot_L_pos_body, foot_R_pos_body, v_foot_L_body, v_foot_R_body
 
