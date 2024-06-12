@@ -34,7 +34,7 @@ from pinocchio.robot_wrapper import RobotWrapper
 
 # Set the directory for the simulation environment's source code
 SOURCE_DIR = (
-    "/your_directory/"  # TODO: change to your own project dir
+    ""  # TODO: change to your own project dir
 )
 
 urdf_path = "xiaotian/urdf/xiaotian.urdf"  # 替换为你的URDF文件路径
@@ -45,6 +45,15 @@ robot = RobotWrapper.BuildFromURDF(urdf_path, package_dirs=package_dirs, root_jo
 USE_SIM = False  # TODO: you should change to False to implement your own state estimator
 
 timestep = 0.001
+
+# 改用全局变量来设置噪声。
+Q_POSITION_ERROR = timestep * 0.01 / 20
+Q_VELOCITY_ERROR = timestep * 0.0001 * 9.8 / 20
+Q_FOOT_ERROR = 0.001
+
+R_POSITION_ERROR = 0.001
+R_VELOCITY_ERROR = 0.1
+R_FOOT_ERROR = 0.001
 
 class MuJoCoSim:
     """Main class for setting up and running the MuJoCo simulation."""
@@ -98,15 +107,15 @@ class MuJoCoSim:
         self.x = np.array([0, 0, 0.625, 0, 0, 0, -0.0696, 0.095, 0, -0.0696, -0.095, 0]).T 
         self.P = np.eye(12)*0.01
         self.EKF_Q = np.eye(12)
-        self.EKF_Q[:3, :3] = np.eye(3)*timestep*0.02/20
-        self.EKF_Q[3:6, 3:6] = np.eye(3)*timestep*0.02*9.8/20
-        self.EKF_Q[6:9, 6:9] = np.eye(3)*timestep*0.02
-        self.EKF_Q[9:12, 9:12] = np.eye(3)*timestep*0.02
+        self.EKF_Q[:3, :3] = np.eye(3) * Q_POSITION_ERROR
+        self.EKF_Q[3:6, 3:6] = np.eye(3) * Q_VELOCITY_ERROR
+        self.EKF_Q[6:9, 6:9] = np.eye(3) * Q_FOOT_ERROR
+        self.EKF_Q[9:12, 9:12] = np.eye(3) * Q_FOOT_ERROR
 
         self.EKF_R = np.zeros((14,14))
-        self.EKF_R[:6, :6] = np.eye(6)*0.01 
-        self.EKF_R[6:12, 6:12] = np.eye(6)*0.01
-        self.EKF_R[12:14, 12:14] = np.eye(2)*0.01
+        self.EKF_R[:6, :6] = np.eye(6) * R_POSITION_ERROR
+        self.EKF_R[6:12, 6:12] = np.eye(6) * R_VELOCITY_ERROR
+        self.EKF_R[12:14, 12:14] = np.eye(2) * R_FOOT_ERROR
         self.W = np.zeros([3])
 
     def get_joint_state(self):
@@ -231,13 +240,15 @@ class MuJoCoSim:
         # 得到在Body坐标系下的左右脚的位置
         BPL, BPR, BVL, BVR = z2x_getFootPosition(qpos_[:3], qpos_[3:6], qvel_[:3], qvel_[3:6], contact_info)
         quat = quaternion.from_float_array(self.data.qpos.astype(np.double)[3:7])
-        z, rotation_ob = z2x_Obserbation(BPL, BPR, BVL, BVR, ang_vel.data, quat, contact_info)
+        z, rotation_ob = z2x_Obserbation(BPL, BPR, BVL, BVR, ang_vel.data, quat, contact_info,self.x[:3], self.x[3:6])
         # 加速度从自身坐标系变换到世界坐标系
         a = rotation_ob @ lin_acc.data + np.array([0, 0, -9.81])
         self.x, self.P = z2x_EKF(self.x, z, self.P, a, self.EKF_Q, self.EKF_R, contact_info)
         self.lastBPL, self.lastBPR = BPL, BPR
-        # print('[debug] 机器人全局测量位置', self.x[:3])
-        # print(['[debug] 机器人全局真实位置', self.data.qpos[:3]])
+        print('[debug] 机器人全局测量位置', self.x[:3])
+        print(['[debug] 机器人全局真实位置', self.data.qpos[:3]])
+        print('[debug] 全局真实速度 ', self.data.qvel[:3])
+        print('[debug] 速度误差：', self.data.qvel[:3] - self.x[3:6])
         if USE_SIM:
             return self.data.qvel[:3]
         else:
@@ -245,55 +256,72 @@ class MuJoCoSim:
 
 def z2x_EKF(x, z, P, u, Q, R, contact_info):
     # R 是测量协方差， Q是过程预测协方差，当处于摆动状态时，需要增大Q的方差，告诉模型现在过程不准
-    if contact_info[0] == 0:
-        Q[6:9, 6:9] = np.eye(3)*timestep*1e10*0.02/20
-        R[0:3, 0:3] = np.eye(3)*0.01*1e10
-        R[6:9, 6:9] = np.eye(3)*0.01*1e10
-        R[12, 12] = np.eye(1)*0.01*1e10
-        Q[9:12, 9:12] = np.eye(3)*timestep*0.02/20
-        R[3:6, 3:6] = np.eye(3)*0.01
-        R[9:12, 9:12] = np.eye(3)*0.01
-        R[13, 13] = np.eye(1)*0.01
-    if contact_info[1] == 0:
-        Q[9:12, 9:12] = np.eye(3)*timestep*1e10*0.02/20
-        R[3:6, 3:6] = np.eye(3)*0.01*1e10
-        R[9:12, 9:12] = np.eye(3)*0.01*1e10
-        R[13, 13] = np.eye(1)*0.01*1e10
-        Q[6:9, 6:9] = np.eye(3)*timestep*0.02/20
-        R[0:3, 0:3] = np.eye(3)*0.01
-        R[6:9, 6:9] = np.eye(3)*0.01
-        R[12, 12] = np.eye(1)*0.01
-    R = R * 1e10
-
+    ########### PREDICT ##########
     A = np.eye(12)
-    A[0:3, 3:6] = np.eye(3)*timestep
+    A[0:3, 3:6] = np.eye(3) * timestep
     B = np.zeros([12, 3])
-    B[3:6, :] = np.eye(3)*timestep
-    global z2x_x, z2x_v
-    z2x_v += u[0]*timestep
-    z2x_x += z2x_v*timestep
+    B[3:6, :] = np.eye(3) * timestep
     x_hat = A@x + B@u
     P_hat = A@P@A.T + Q
+    ############ END PREDICT #########
     H = np.vstack((
-            np.hstack((np.eye(3), np.zeros([3, 3]), -np.eye(3), np.zeros([3, 3]))),
-            np.hstack((np.eye(3), np.zeros([3, 3]), np.zeros([3, 3]), -np.eye(3))),
-            np.hstack((np.zeros([3, 3]), np.eye(3), np.zeros([3, 3]), np.zeros([3, 3]))),
-            np.hstack((np.zeros([3, 3]), np.eye(3), np.zeros([3, 3]), np.zeros([3, 3]))),
-            np.hstack((np.zeros([1, 8]), np.array([[1]]), np.zeros([1, 3]))),
-            np.hstack( (np.zeros([1, 11]), np.array([[1]])) )
-            ))
-    K = P_hat @ H.T @ np.linalg.inv(H@P_hat@H.T + R)
-    x = x_hat + K@(z - H@x_hat)
-    P = (np.eye(12) - K@H)@P_hat
+        np.hstack((np.eye(3), np.zeros([3, 3]), -np.eye(3), np.zeros([3, 3]))),
+        np.hstack((np.eye(3), np.zeros([3, 3]), np.zeros([3, 3]), -np.eye(3))),
+        np.hstack((np.zeros([3, 3]), np.eye(3), np.zeros([3, 3]), np.zeros([3, 3]))),
+        np.hstack((np.zeros([3, 3]), np.eye(3), np.zeros([3, 3]), np.zeros([3, 3]))),
+        np.hstack((np.zeros([1, 8]), np.array([[1]]), np.zeros([1, 3]))),
+        np.hstack((np.zeros([1, 11]), np.array([[1]])))
+    ))
+    ########## UPDATE COV ####################3
+    Q[:3, :3] = 0.01 * np.eye(3) * Q_POSITION_ERROR
+    Q[3:6, 3:6] = np.eye(3) * Q_VELOCITY_ERROR
+
+    # 上一轮修改的R和Q可能会保存在self.R, self.Q中
+    # 为了避免这个情况， 需要分别考虑
+    # contact_info[0]=0, contact_info[1]=0, contact_info[0]=1, contact_info[1]=1
+    # 几种情况。 方便起见，借用循环来设置。
+    for i in range(2):
+        Q[6 + i * 3: 6 + (i + 1) * 3, 6 + i * 3: 6 + (i + 1) * 3] = (1 + (
+                1 - contact_info[i]) * 1e10) * Q_FOOT_ERROR * np.eye(3) * timestep
+        R[i * 3: (i + 1) * 3, i * 3: (i + 1) * 3] = (1 + (
+                1 - contact_info[i]) * 1e10) * R_POSITION_ERROR * np.eye(3)
+        R[6 + i * 3: 6 + (i + 1) * 3, 6 + i * 3: 6 + (i + 1) * 3] = (1 +
+                (1 - contact_info[i]) * 1e10) * R_VELOCITY_ERROR * np.eye(3)
+        # R[2 * 6 + i, 2 * 6 + i] = (1 + (1 - contact_info[i]) * 1e3) * R_FOOT_ERROR
+    # 取消足部纵坐标观测。
+    R[12, 12] = 100.0
+    R[13, 13] = 100.0
+    if np.linalg.det(P[0:2, 0:2]) > 1e-6:
+        P[0:2, 2:12] = 0
+        P[2:12, 0:2] = 0
+        P[0:2, 0:2] /= 10.0
+    ########## END UPDATE COV ####################
+
+    ########## UPDATE Kalman ##########
+    K = P_hat @ H.T @ np.linalg.inv(H @ P_hat @ H.T + R)
+    x = x_hat + K @ (z - H @ x_hat)
+    P = (np.eye(12) - K @ H) @ P_hat
+    P = (P + P.T) / 2.0
+    ############ END UPDATE Kalman ##########
     return x, P
 
-def z2x_Obserbation(BPL, BPR, BVL, BVR, W, quat, contact_info):
+
+def z2x_Obserbation(BPL, BPR, BVL, BVR, W, quat, contact_info, x_pcom, v_pcom):
     matrix_q = quaternion.as_rotation_matrix(quat)
+    trust_L, trust_R = contact_info
+    # 
+    # FRAME_BPL = np.linalg.inv(matrix_q) @ BPL
+    # FRAME_BPR = np.linalg.inv(matrix_q) @ BPR
+    FRAME_BPL = BPL
+    FRAME_BPR = BPR
+    # 接触，用脚部速度估计；不接触，用上一轮的状态
+    v_1 = (1 - trust_L) * v_pcom + trust_L * (-matrix_q @ (np.cross(W, FRAME_BPL) + BVL))
+    v_2 = (1 - trust_R) * v_pcom + trust_R * (-matrix_q @ (np.cross(W, FRAME_BPR) + BVR))
     z = np.concatenate((-matrix_q@BPL,
-                        -matrix_q@BPR, # error?
-                        -matrix_q@(np.cross(W, BPL) + BVL),
-                        -matrix_q@(np.cross(W, BPR) + BVR),
-                        np.array([0.037062]), 
+                        -mtrix_q@BPR,  # error?
+                        v_1.reshape((3,)),
+                        v_2.reshape((3,)),
+                        np.array([0.037062]),
                         np.array([0.037062])
                         ), axis=0)
     return z, matrix_q
@@ -306,10 +334,14 @@ def z2x_getFootPosition(leftP, rightP, leftV, rightV, contact):
     qpos = np.zeros(robot.model.nq)
     qvel = np.zeros(robot.model.nv)
     
-    qpos[:3] = leftP
-    qpos[7:10] = rightP
-    qvel[:3] = leftV
-    qvel[7:10] = rightV
+    # qpos[:3] = leftP
+    # qpos[7:10] = rightP
+    # qvel[:3] = leftV
+    # qvel[7:10] = rightV
+    qpos[14:17] = leftP
+    qpos[17:20] = rightP
+    qvel[12:15] = leftV
+    qvel[15:18] = rightV
     
     # 计算正运动学和雅可比矩阵
     pin.forwardKinematics(robot.model, robot.data, qpos, qvel)
@@ -330,13 +362,16 @@ def z2x_getFootPosition(leftP, rightP, leftV, rightV, contact):
     v_foot_R = J_foot_R[:3, :] @ qvel  # 提取线速度部分
 
     foot_L_pos_body = foot_L_to_base.translation
-    foot_L_pos_body = np.array([-foot_L_pos_body[1], -foot_L_pos_body[0], foot_L_pos_body[2]])
+    # foot_L_pos_body = np.array([-foot_L_pos_body[1], -foot_L_pos_body[0], foot_L_pos_body[2]])
     foot_R_pos_body = foot_R_to_base.translation
-    foot_R_pos_body = np.array([foot_R_pos_body[1], foot_R_pos_body[0], foot_R_pos_body[2]])
-    v_foot_L_body = foot_L_to_base.rotation @ v_foot_L
-    v_foot_L_body = np.array([v_foot_L_body[1], v_foot_L_body[0], v_foot_L_body[2]])
-    v_foot_R_body = foot_R_to_base.rotation @ v_foot_R
-    v_foot_R_body = np.array([v_foot_R_body[1], v_foot_R_body[0], v_foot_R_body[2]])
+    # foot_R_pos_body = np.array([foot_R_pos_body[1], foot_R_pos_body[0], foot_R_pos_body[2]])
+    # v_foot_L_body = foot_L_to_base.rotation @ v_foot_L
+    # v_foot_L_body = np.array([v_foot_L_body[1], v_foot_L_body[0], v_foot_L_body[2]])
+    # v_foot_R_body = foot_R_to_base.rotation @ v_foot_R
+    # v_foot_R_body = np.array([v_foot_R_body[1], v_foot_R_body[0], v_foot_R_body[2]])
+    v_foot_L_body = pin.getFrameVelocity(robot.model, robot.data, foot_L_id, pin.ReferenceFrame.LOCAL).linear
+    v_foot_R_body = pin.getFrameVelocity(robot.model, robot.data, foot_R_id, pin.ReferenceFrame.LOCAL).linear
+
     # 输出结果是[3,]维度
     return foot_L_pos_body, foot_R_pos_body, v_foot_L_body, v_foot_R_body
     
