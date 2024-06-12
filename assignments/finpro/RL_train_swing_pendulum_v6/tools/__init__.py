@@ -28,8 +28,8 @@ def init_mujoco(model_path):
 def random_state(data):
     init_x = np.random.uniform(-0.52, 0.52)
     init_theta = np.random.uniform(-0.26, 0.26)
-    init_v = np.random.uniform(-3.05, 3.05)
-    init_omega = np.random.uniform(-3.05, 3.05)
+    init_v = np.random.uniform(-2.60, 2.60)
+    init_omega = np.random.uniform(-2.55, 2.55)
     data.qpos[0] = init_x
     data.qpos[1] = init_theta
     data.qvel[0] = init_v

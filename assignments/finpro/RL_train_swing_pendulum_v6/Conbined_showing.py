@@ -16,12 +16,20 @@ import matplotlib.pyplot as plt
 
 
 def is_stable(data):
-    if abs(data.qpos[1]) < 0.35 and abs(data.qvel[0]) < 5.5 and abs(data.qvel[1]) <3.99:
+    '''
+    If the state of the pendulum is:
+    abs(x) < 0.55
+    abs(theta) < 0.24
+    abs(v) < 1.8
+    abs(omega) < 1.8
+    Then it will be stable.
+    '''
+    if abs(data.qpos[1]) < 0.55 and abs(data.qvel[0]) < 3.98 and abs(data.qvel[1]) <3.78:
         return True
     return False
 
 def is_unstable(data):
-    if abs(data.qpos[1]) > 0.8:
+    if abs(data.qpos[1]) > 0.85:
         return True
     return False
 
@@ -37,9 +45,9 @@ def get_action(agent, action_space, stable_state):
 import tools
 if __name__ == "__main__":
     xml_path = "inverted_swing_pendulum.xml"
-    # stable_model_path = "stable_2024-06-09-20-49-46/autosave.pth"
-    # swing_model_path = "v62_2024-06-09-20-22-21/temp_model_save_at_epoch_60.pth"
-    stable_model_path = 'models/ethy_official_stable_model.ethy'
+    # stable_model_path = "stable_2024-06-09-21-51-10/temp_model_save_at_epoch_2000.pth"
+    # swing_model_path = "v62_2024-06-09-20-22-21/swing_up.pth"
+    stable_model_path = 'models/ethy_official_stable_model2.ethy'
     swing_model_path = 'models/ethy_official_swing_model.ethy'
     model, data = tools.init_mujoco(xml_path)
 
@@ -107,6 +115,6 @@ if __name__ == "__main__":
                 i += 1
                 # if i % 100 == 0:
                 #     print(f'state: {state}, action: {action}, next_state: {next_state}')
-                done = data.time > 25 and (not stable_state) # Example condition to end episode
+                done = data.time > 10 and (not stable_state) # Example condition to end episode
                 # state = next_state
             episode += 1

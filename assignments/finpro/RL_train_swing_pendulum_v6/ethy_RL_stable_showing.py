@@ -54,7 +54,7 @@ def video_record(mujoco_model, mujoco_data, video_writer):
 
 if __name__ == "__main__":
     xml_path = "inverted_swing_pendulum.xml"
-    model_path = "stable_2024-06-09-19-36-46/temp_model_save_at_epoch_10000.pth"
+    model_path = "stable_2024-06-09-22-42-04/temp_model_save_at_epoch_2000.pth"
     # model_path = "models/ethy_official_stable1.ethy"
 
     model, data = tools.init_mujoco(xml_path)
@@ -96,7 +96,7 @@ if __name__ == "__main__":
                 # rewards.append(reward)
                 # log_probs.append(log_prob)
                 # states.append(state.copy())
-                done = data.time > 20 or abs(data.qpos[1]) > 0.35    # Example condition to end episode
+                done = data.time > 5 or abs(data.qpos[1]) > 0.7    # Example condition to end episode
                 # video_record(model, data, video_writer) # uncommit this to make vedio
                 render(window, model, data) # commit this line to speed up the training
             # log_probs.append(log_prob)

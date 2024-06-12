@@ -72,11 +72,8 @@ if __name__ == "__main__":
                     rewards.append(reward)
                     log_probs.append(log_prob)
                     states.append(state.copy())
-                    done = data.time > 45 or abs(data.qpos[1]) > 0.18  # Example condition to end episode
+                    done = data.time > 20 or abs(data.qpos[1]) > 0.18  # Example condition to end episode
 
-                    # 获取tip的世界坐标
-                    # tip_xpos = data.site_xpos[model.site('tip').id]
-                    # print("Tip Position:", tip_xpos)
                     ####################################
                     ### commit the following line to speed up the training
                     ####################################
