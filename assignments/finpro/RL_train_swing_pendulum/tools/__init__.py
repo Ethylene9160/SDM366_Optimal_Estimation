@@ -32,35 +32,49 @@ def load_model(model: nn.Module, path: str):
         print(f"No model found at {path}")
 
 
-class CustomEnv(gym.Env):
-    def __init__(self, model, data, reward_function, max_time=45, x_threshold=1.45):
-        super(CustomEnv, self).__init__()
+class CustomEnv_a(gym.Env):
+    def __init__(self, model, data, reward_function, max_time=120, theta_threshold=0.5):
+        super(CustomEnv_a, self).__init__()
         self.model = model
         self.data = data
         self.reward_function = reward_function
         self.max_time = max_time
-        self.x_threshold = x_threshold
+        self.theta_threshold = theta_threshold
 
         # Define action and observation space
-        self.action_space = spaces.Box(low=-1, high=1, shape=(model.nu,), dtype=np.float32)
+        self.action_space = spaces.Box(low=-3, high=3, shape=(model.nu,), dtype=np.float32)
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(6,), dtype=np.float32)
 
     def step(self, action):
         self.data.ctrl[0] = action
         mujoco.mj_step(self.model, self.data)
         state = self._get_obs()
-        reward = self.reward_function(state, action)
-        done = self.data.time > self.max_time or abs(state[0]) > self.x_threshold
-        return state, reward, done, {}
 
-    def reset(self):
+        # reward = self.reward_function(state, action)
+        reward = 1.0
+        reward = float(reward)
+
+        theta = np.arctan2(state[2], state[3])
+        done = bool(self.data.time > self.max_time or abs(theta) > self.theta_threshold)
+        truncated = bool(self.data.time > self.max_time)
+        # if done:
+        #     print(f"Episode ended at time {self.data.time}, x = {state[0]}", reward)
+        return state, reward, done, truncated, {}
+
+    def reset(self, seed=None):
+        """Randomize the high state."""
+        np.random.seed(seed)
         mujoco.mj_resetData(self.model, self.data)
-        seed = random.randint(0, 10000)
-        random_state(self.data, seed)
-        return self._get_obs()
+        self.data.qpos[0] = np.random.uniform(-1.25, 1.25)
+        self.data.qpos[1] = np.random.uniform(-0.30, 0.30)
+        self.data.qvel[0] = np.random.uniform(-2.0, 2.0)
+        self.data.qvel[1] = np.random.uniform(-2.0, 2.0)
+        return self._get_obs(), {}
 
     def _get_obs(self):
-        return get_obs_lifer(self.data)
+        # return get_obs(self.data) as float32
+        # return get_obs_lifer(self.data)
+        return get_obs_lifer(self.data).astype(np.float32)
 
     def render(self, mode='human'):
         pass
@@ -69,37 +83,46 @@ class CustomEnv(gym.Env):
         pass
 
 
-class Policy_Network(nn.Module):
-    """Neural network to parameterize the policy by predicting action distribution parameters."""
+class CustomEnv_b(gym.Env):
+    def __init__(self, model, data, reward_function, max_time=120):
+        super(CustomEnv_b, self).__init__()
+        self.model = model
+        self.data = data
+        self.reward_function = reward_function
+        self.max_time = max_time
 
-    def __init__(self, obs_space_dims: int, action_space_dims: int):
-        """Initializes layers of the neural network.
+        # Define action and observation space
+        self.action_space = spaces.Box(low=-3, high=3, shape=(model.nu,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(6,), dtype=np.float32)
 
-        Args:
-            obs_space_dims (int): Dimension of the observation space.
-            action_space_dims (int): Dimension of the action space.
-        """
-        super().__init__()
-        self.fc1 = nn.Linear(obs_space_dims, 128)
-        self.fc2 = nn.Linear(128, 64)
-        self.mean = nn.Linear(64, action_space_dims)
-        self.log_std = nn.Linear(64, action_space_dims)
+    def step(self, action):
+        self.data.ctrl[0] = action
+        mujoco.mj_step(self.model, self.data)
+        state = self._get_obs()
+        reward = self.reward_function(state, action)
+        reward = float(reward)
+        done = bool(self.data.time > self.max_time)  # or bool(abs(state[0]) > 1.30)
+        truncated = bool(self.data.time > self.max_time)
+        # if done:
+        #     print(f"Episode ended at time {self.data.time}, x = {state[0]}", reward)
+        return state, reward, done, truncated, {}
 
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Predicts parameters of the action distribution given the state.
+    def reset(self, seed=None):
+        mujoco.mj_resetData(self.model, self.data)
+        random_state(self.data, seed)
+        # self.data.qpos[1] -= np.pi
+        return self._get_obs(), {}
 
-        Args:
-            x (torch.Tensor): The state observation.
+    def _get_obs(self):
+        # return get_obs(self.data) as float32
+        # return get_obs_lifer(self.data)
+        return get_obs_lifer(self.data).astype(np.float32)
 
-        Returns:
-            tuple[torch.Tensor, torch.Tensor]: Predicted mean and standard deviation of the action distribution.
-        """
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        mean = self.mean(x)
-        log_std = self.log_std(x)
-        std = torch.exp(log_std)
-        return mean, std
+    def render(self, mode='human'):
+        pass
+
+    def close(self):
+        pass
 
 
 np.random.seed(0)
@@ -121,30 +144,6 @@ def random_state(data, seed=2333):
     data.qpos[1] = init_theta
     data.qvel[0] = init_v
     data.qvel[1] = init_omega
-
-
-def get_obs(data):
-    # return np.concatenate(
-    #     [
-    #         data.qpos[:1],  # cart x pos
-    #         np.sin(data.qpos[1:]),  # link angles
-    #         np.cos(data.qpos[1:]),
-    #         np.clip(data.qvel, -10, 10),
-    #         np.clip(data.qfrc_constraint, -10, 10),
-    #     ]
-    # ).ravel()
-    if data.qpos[1] > np.pi:
-        data.qpos[1] -= 2 * np.pi
-    elif data.qpos[1] < -np.pi:
-        data.qpos[1] += 2 * np.pi
-    return np.concatenate(
-        [
-            data.qpos,
-            data.qvel
-            # np.sin(data.qpos[1:]),
-            # np.cos(data.qpos[1:])
-        ]
-    ).ravel()
 
 
 def get_obs_lifer(data):

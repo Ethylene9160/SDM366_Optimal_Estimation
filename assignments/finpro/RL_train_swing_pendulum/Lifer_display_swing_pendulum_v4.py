@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+import time
 import warnings
 
 import cv2
@@ -64,8 +65,8 @@ def video_record(mujoco_model, mujoco_data, video_writer):
 
 if __name__ == "__main__":
     xml_path = "Lifer_inverted_swing_pendulum.xml"
-    model_path_a = "models_v4/a/temp_1718003498_epoch_5098.zip"
-    model_path_b = "models_v4/b/temp_1718003498_epoch_5098.zip"
+    model_path_a = "models_v4/a/temp_1718280826_epoch_5000000.zip"
+    model_path_b = "models_v4/b/temp_1718304517_epoch_500000.zip"
     model, data = tools.init_mujoco(xml_path)
     window = init_glfw()
 
@@ -79,8 +80,8 @@ if __name__ == "__main__":
             action_space_dims = model.nu
 
             # Load PPO models
-            env_a = tools.CustomEnv(model, data, calculate_reward_fake)
-            env_b = tools.CustomEnv(model, data, calculate_reward_fake)
+            env_a = tools.CustomEnv_a(model, data, calculate_reward_fake)
+            env_b = tools.CustomEnv_b(model, data, calculate_reward_fake)
             agent_a = PPO.load(model_path_a, env=env_a)
             agent_b = PPO.load(model_path_b, env=env_b)
 
@@ -93,16 +94,20 @@ if __name__ == "__main__":
                 print('The episode is:', episode)
                 mujoco.mj_resetData(model, data)
                 tools.random_state(data, seed)
+                # data.qpos[0] = np.random.uniform(-1.25, 1.25)
+                # data.qpos[1] = np.random.uniform(-0.30, 0.30)
+                # data.qvel[0] = np.random.uniform(-2.0, 2.0)
+                # data.qvel[1] = np.random.uniform(-2.0, 2.0)
 
                 while not done:
                     state = tools.get_obs_lifer(data)
                     state_theta = np.arctan2(state[2], state[3])
 
                     x, theta, sin_theta, cos_theta, x_dot, theta_dot = state
-                    if abs(x) < 0.55 and abs(theta) < 0.23 and abs(x_dot) < 0.8 and abs(theta_dot) < 0.8:
+                    if abs(x) < 0.75 and abs(theta) < 0.30 and abs(x_dot) < 2 and abs(theta_dot) < 2:
                         print('The state is:', state)
 
-                    if abs(state_theta) < 0.23:
+                    if abs(state_theta) < 0.30:
                         action, _ = agent_a.predict(state)
                     else:
                         action, _ = agent_b.predict(state)
@@ -113,7 +118,10 @@ if __name__ == "__main__":
                     done = data.time > 450  # Example condition to end episode
 
                     render(window, model, data)
+
+                    # print(state[0], state[1], state[2], state[3], state[4], state[5])
                     # print(state_theta)
+                    # time.sleep(1)
 
                 time_records.append(data.time)
                 print(f'lasted for {data.time:.2f} seconds')

@@ -12,7 +12,7 @@
         <!--geom name="ground" type="plane" pos="0 0 0" /-->
         <geom name="rail" pos="0 0 0" quat="0.707 0 0.707 0" rgba="0.9157 0.6529 0.6039 1" size="0.02 3" type="capsule"/>
         <body name="cart" pos="0 0 0">
-            <joint axis="1 0 0" limited="true" name="slider" pos="0 0 0" range="-1.5 1.5" type="slide"/>
+            <joint axis="1 0 0" limited="true" name="slider" pos="0 0 0" range="-1.50 1.50" type="slide"/>
             <geom name="cart" pos="0 0 0" quat="0.707 0 0.707 0" rgba="0.6118 0.8627 1 1" size="0.1 0.1"
                   type="capsule"/>
             <body name="pole" pos="0 0 0">
