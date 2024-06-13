@@ -24,7 +24,7 @@ def is_stable(data):
     abs(omega) < 1.8
     Then it will be stable.
     '''
-    if abs(data.qpos[1]) < 0.55 and abs(data.qvel[0]) < 3.98 and abs(data.qvel[1]) <3.78:
+    if abs(data.qpos[1]) < 0.4 and abs(data.qvel[0]) < 2.0 and abs(data.qvel[1]) <2.0:
         return True
     return False
 
@@ -33,32 +33,28 @@ def is_unstable(data):
         return True
     return False
 
-def get_action(agent, action_space, stable_state):
+def get_action(agent, data, stable_state):
     if stable_state:
-        action, _ = agent.sample_action(state)
+        obs = tools.get6obs(data)
     else:
-        action = agent.sample_action(state)
-        action = action_space[action]
-    return action
+        obs = tools.get_obs(data)
+    return agent.sample_action(obs)[0]
 
 
 import tools
 if __name__ == "__main__":
     xml_path = "inverted_swing_pendulum.xml"
-    # stable_model_path = "stable_2024-06-09-21-51-10/temp_model_save_at_epoch_2000.pth"
-    # swing_model_path = "v62_2024-06-09-20-22-21/swing_up.pth"
-    stable_model_path = 'models/ethy_official_stable_model2.ethy'
-    swing_model_path = 'models/ethy_official_swing_model.ethy'
+    stable_model_path = 'models/ethy_official_stable.ethy'
+    swing_model_path = 'models/ethy_official_swing_up.ethy'
     model, data = tools.init_mujoco(xml_path)
 
-    stable_state = False
     obs_space_dims = 6
     action_space_dims = model.nu
     print('nq: ', model.nq)
     print('nu: ', model.nu)
     print('state: ', data.qpos.shape[0])
     action_space = [-15.0, -5.0, -1.2, -0.4, 0, 0.4, 1.2, 5.0, 15.0]
-    swing_agent = tools.DQNAgent(obs_space_dims, action_space, gamma=0.98)
+    swing_agent = tools.DDPGAgent(4, 1)
     swing_agent.load_model(swing_model_path)
     stable_agent = tools.A2CAgent(obs_space_dims, action_space_dims, lr=0.000, gamma=0.99)
     stable_agent.load_model(stable_model_path)
@@ -66,7 +62,6 @@ if __name__ == "__main__":
     # agent.load_model(model_path)
     agent = swing_agent
     total_num_episodes = int(10)  # training epochs
-    time_records = []
     with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
         episode = 0
         while viewer.is_running() and episode < total_num_episodes:
@@ -79,6 +74,9 @@ if __name__ == "__main__":
             data.time = 0
             print('The episode is:', episode)
 
+            agent = swing_agent
+            stable_state = False
+
             # 重置环境到初始状态
             mujoco.mj_resetData(model, data)
             data.qpos[1] = -np.pi
@@ -89,10 +87,11 @@ if __name__ == "__main__":
             while not done:
                 step_start = time.time()
 
-                action = get_action(agent, action_space, stable_state)
+                action = get_action(agent, data, stable_state)
+                # print('action:', action)
                 data.ctrl[0] = action
                 mujoco.mj_step(model, data)
-                state = tools.get_obs(data)
+                state = tools.get6obs(data)
 
                 if stable_state == False:
                     if is_stable(data):
@@ -115,6 +114,6 @@ if __name__ == "__main__":
                 i += 1
                 # if i % 100 == 0:
                 #     print(f'state: {state}, action: {action}, next_state: {next_state}')
-                done = data.time > 10 and (not stable_state) # Example condition to end episode
+                done = data.time > 6 #and (not stable_state) # Example condition to end episode
                 # state = next_state
             episode += 1

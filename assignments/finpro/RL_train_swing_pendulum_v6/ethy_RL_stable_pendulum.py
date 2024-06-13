@@ -34,9 +34,9 @@ if __name__ == "__main__":
 
     obs_space_dims = 6
     action_space_dims = model.nu
-    agent = tools.A2CAgent(obs_space_dims, action_space_dims, lr=8e-4, gamma = 0.99)
+    agent = tools.A2CAgent(obs_space_dims, action_space_dims, lr=2e-4, gamma = 0.99)
     # model_path = ""
-    read_model_path = "stable_2024-06-09-21-03-17/autosave.pth"
+    read_model_path = "stab6-09-21-48-25/autosave.pth"
     save_model_path = "a2c_policy_v2.pth"
     try:
         agent.load_model(read_model_path)
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     auto_save_epochs = 1000
     total_reward = []
     try:
-
+        i = 0
         # create viewer
         with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
             total_num_episodes = int(19999)
@@ -73,17 +73,14 @@ if __name__ == "__main__":
                     ######  Calculate the Reward #######
                     reward = 1.0
                     ###### End. The same as the official model ########
-                    pennity = 0.82*data.qpos[0]**2+0.001*data.qvel[0]**2+0.1*data.qvel[1]**2
+                    pennity = 0.85*data.qpos[0]**2+0.005*data.qvel[0]**2+0.05*data.qvel[1]**2
                     reward -= pennity
 
                     rewards.append(reward)
                     log_probs.append(log_prob)
                     states.append(state.copy())
-                    done = data.time > 20 or abs(data.qpos[1]) > 0.32  # Example condition to end episode
+                    done = data.time > 12 or abs(data.qpos[1]) > 0.55  # Example condition to end episode
 
-                    # 获取tip的世界坐标
-                    # tip_xpos = data.site_xpos[model.site('tip').id]
-                    # print("Tip Position:", tip_xpos)
                     ####################################
                     ### commit the following line to speed up the training
                     ####################################
@@ -98,7 +95,9 @@ if __name__ == "__main__":
                     ####################################
 
                 agent.update(rewards, log_probs, states)
-                total_reward.append(np.sum(np.array(rewards)))
+                if i == 50:
+                    i = 0
+                    total_reward.append(np.sum(np.array(rewards)))
                 episode += 1
                 if episode % auto_save_epochs == 0:
                     agent.save_model(f"stable_{current_time}/temp_model_save_at_epoch_{episode}.pth")
