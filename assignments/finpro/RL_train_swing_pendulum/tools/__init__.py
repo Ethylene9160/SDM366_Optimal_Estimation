@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import random
 
 import gymnasium as gym
 import mujoco
@@ -123,9 +122,6 @@ class CustomEnv_b(gym.Env):
 
     def close(self):
         pass
-
-
-np.random.seed(0)
 
 
 def init_mujoco(model_path):
