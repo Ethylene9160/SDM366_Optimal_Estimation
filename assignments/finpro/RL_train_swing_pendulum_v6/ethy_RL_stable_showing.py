@@ -54,7 +54,7 @@ def video_record(mujoco_model, mujoco_data, video_writer):
 
 if __name__ == "__main__":
     xml_path = "inverted_swing_pendulum.xml"
-    model_path = "stable_2024-06-09-22-42-04/temp_model_save_at_epoch_2000.pth"
+    model_path = "stable4_2024-06-14-00-09-26/temp_model_save_at_epoch_17000.pth"
     # model_path = "models/ethy_official_stable1.ethy"
 
     model, data = tools.init_mujoco(xml_path)
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     if window:
         # obs_space_dims = model.nq
-        obs_space_dims = 6
+        obs_space_dims = 4
         action_space_dims = model.nu
         print('nq: ', model.nq)
         print('nu: ', model.nu)
@@ -84,7 +84,7 @@ if __name__ == "__main__":
             tools.random_state(data)
             while not done:
                 step_start = time.time()
-                state = tools.get_obs(data)
+                state = tools.get4obs(data)
                 action, log_prob = agent.sample_action(state)
                 data.ctrl[0] = action
                 mujoco.mj_step(model, data)
