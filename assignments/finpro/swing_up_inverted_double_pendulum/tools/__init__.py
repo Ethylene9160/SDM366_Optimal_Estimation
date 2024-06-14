@@ -29,9 +29,9 @@ def random_state(data):
     x = np.random.uniform(-0.1, 0.1)
     theta1 = np.random.uniform(-0.2, 0.2)
     theta2 = np.random.uniform(-0.2, 0.2)
-    dx = np.random.uniform(-1.1, 1.1)
-    dtheta1 = np.random.uniform(-0.8, 0.8)
-    dtheta2 = np.random.uniform(-1.1, 1.1)
+    dx = np.random.uniform(-0.3, 0.3)
+    dtheta1 = np.random.uniform(-0.2, 0.2)
+    dtheta2 = np.random.uniform(-0.2, 0.2)
 
 def get_obs(data):
     '''
@@ -42,16 +42,16 @@ def get_obs(data):
     obs[4]: sin(angle)
     obs[5]: cos(angle)
     '''
-    theta = data.qpos[1:]
-    theta = np.where(theta >= np.pi, theta - np.pi, theta)
-    theta = np.where(theta < -np.pi, theta + np.pi, theta)
+    # theta = data.qpos[1:]
+    # theta = np.where(theta >= np.pi, theta - np.pi, theta)
+    # theta = np.where(theta < -np.pi, theta + np.pi, theta)
     return np.concatenate(
         [
-            data.qpos[:1],
-            theta,
+            data.qpos,
+            # theta,
             data.qvel,
-            # np.sin(data.qpos[1:]),
-            # np.cos(data.qpos[1:])
+            np.sin(data.qpos[1:]),
+            np.cos(data.qpos[1:])
         ]
     ).ravel()
 

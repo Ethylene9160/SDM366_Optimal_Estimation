@@ -24,6 +24,10 @@ def show_rewards(rewards, folder_name):
     plt.show()
 
 import tools
+import pilco
+from pilco.rewards import ExponentialReward
+from pilco.controllers import RbfController, LinearController
+from pilco.models import PILCO
 if __name__ == "__main__":
     xml_path = "inverted_swing_double_pendulum.xml"
     current_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
@@ -32,6 +36,17 @@ if __name__ == "__main__":
 
     obs_space_dims = 6
     action_space_dims = model.nu
+
+    ######## INIT FOR PILCO ########
+    controller = LinearController(state_dim = obs_space_dims, control_dim = action_space_dims)
+    R = ExponentialReward(state_dim = obs_space_dims, t = np.array([0.0,0.0,1.0,0.0,0.0]))
+    m_init = np.reshape([0.0, 0.0, 0.99699654, -0.0774461, 0.0], (1, 5))
+    S_init = np.diag([0.01, 0.01, 0.01, 0.01, 0.01])
+    m_init = torch.from_numpy(m_init).float().cuda()
+    S_init = torch.from_numpy(S_init).float().cuda()
+
+    ###### END INIT FOR PILCO ##########
+
     agent = tools.DDPGAgent(obs_space_dims, 1)
     read_model_path = "2024-06-14-11-00-24/swing_up.pth"
     # save_model_path = "swing_up.pth"

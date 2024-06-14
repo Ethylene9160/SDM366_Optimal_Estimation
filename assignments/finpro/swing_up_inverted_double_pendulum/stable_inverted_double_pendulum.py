@@ -33,23 +33,23 @@ if __name__ == "__main__":
 
     obs_space_dims = 6
     action_space_dims = model.nu
-    agent = tools.DDPGAgent(obs_space_dims, action_space_dims, lr_a=1e-4, lr_c=1e-4, gamma=0.99, alpha=0.02,device='cuda')
-    read_model_path = "2024-06-142333del_save_at_epoch_400.pth"
-    save_model_path = "swing_up.pth"
+    agent = tools.DDPGAgent(obs_space_dims, action_space_dims, a_bound=2, lr_a = 2e-6, lr_c=2e-6, gamma=0.99, alpha=0.02,device='cuda')
+    read_model_path = "stable_2024-06-14-14-09-04/swing_up.pth"
+    save_model_path = "stable.pth"
 
     try:
         agent.load_model(read_model_path)
     except FileNotFoundError:
         print(f"No saved model found at {read_model_path}. Starting from scratch.")
 
-    auto_save_epochs = 100
+    auto_save_epochs = 800
     total_rewards = []
     episode = 0
     t_limit = 25.0
     step_count = 0
 
     try:
-        total_num_episodes = int(3999)
+        total_num_episodes = int(4799)
         update_target_network_steps = 1000
 
         while episode < total_num_episodes:
@@ -76,8 +76,8 @@ if __name__ == "__main__":
                 # dist_penalty = 0.01 * x ** 2 + (y - 2) ** 2
                 dist_penalty = 0.08 * x ** 2 + 10.0 * (y - 2) ** 2
                 v1, v2 = data.qvel[1:3]
-                vel_penalty = 1e-3 * v1 ** 2 + 5e-3 * v2 ** 2
-                # vel_penalty = 8e-3 * v1 ** 2 + 4e-2 * v2 ** 2
+                # vel_penalty = 1e-3 * v1 ** 2 + 5e-3 * v2 ** 2
+                vel_penalty = 8e-3 * v1 ** 2 + 4e-2 * v2 ** 2
                 # reward = alive_bonus
                 reward = 10 - dist_penalty - vel_penalty
                 # alive_bonus += 1
@@ -88,7 +88,7 @@ if __name__ == "__main__":
                 state = next_state
                 rewards.append(reward)
                 step_count += 1
-            agent.learn()
+            # agent.learn()
             total_rewards.append(np.sum(np.array(rewards)))
             episode += 1
 

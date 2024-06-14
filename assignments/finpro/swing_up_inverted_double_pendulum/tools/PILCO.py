@@ -15,17 +15,16 @@ import torch
 
 def current_reward(state, xlim=0.85):
     '''
-    state[0]: position of cart
-    state[1]: theta
-    state[2]: v of the cart
-    state[3]: omega
+    state[0]: x
+    state[1]: theta1
+    state[2]: theta2
+    state[3]: dx
+    state[4]: dtheta1
+    state[5]: dtheta2
     '''
-    reward =-1.8 * state[1] ** 2 -  0.002 * state[3] ** 2 - 0.2* state[0] ** 2
-    if abs(state[0]) > xlim:
-        reward = -20.0
-    elif abs(state[1]) < 0.20:
-        reward += 3.5
-    return reward
+    y = 0.6*np.cos(state[1]) + 0.6*np.cos(state[1]+state[2])
+    return y
+
 
 class PolicyNetwork(nn.Module):
     def __init__(self, obs_space_dims, action_space_dims):
@@ -57,16 +56,24 @@ class MultitaskGPModel(ExactGP):
         return MultitaskMultivariateNormal(mean_x, covar_x)
 
 class PILCOAgent:
-    def __init__(self, obs_space_dims: int, action_space_dims: int, lr: float = 1e-3, gamma: float = 0.95):
-        self.policy_network = PolicyNetwork(obs_space_dims, action_space_dims)
+    def __init__(self, obs_space_dims, action_space_dims, lr=1e-3, gamma=0.95, batch_size=32, device='cpu'):
+        self.policy_network = PolicyNetwork(obs_space_dims, action_space_dims).to(device)
         self.optimizer_policy = optim.Adam(self.policy_network.parameters(), lr=lr)
         self.gamma = gamma
+        self.batch_size = batch_size
+        self.device = torch.device(device)
 
-        self.likelihood = GaussianLikelihood()
+        self.likelihood = None
         self.gp_model = None
 
-    def sample_action(self, state: np.ndarray) -> tuple[float, torch.Tensor]:
-        state = torch.FloatTensor(state)
+        self.states = []
+        self.actions = []
+        self.rewards = []
+        self.log_probs = []
+        self.next_states = []
+
+    def sample_action(self, state):
+        state = torch.FloatTensor(state).to(self.device)
         mean, std = self.policy_network(state)
         dist = Normal(mean, std)
         action = dist.sample()
@@ -77,8 +84,8 @@ class PILCOAgent:
         if self.gp_model is None:
             self.train_x = train_x
             self.train_y = train_y
-            self.likelihood = MultitaskGaussianLikelihood(num_tasks=train_y.size(-1))
-            self.gp_model = MultitaskGPModel(self.train_x, self.train_y, self.likelihood)
+            self.likelihood = MultitaskGaussianLikelihood(num_tasks=train_y.size(-1)).to(self.device)
+            self.gp_model = MultitaskGPModel(self.train_x, self.train_y, self.likelihood).to(self.device)
         else:
             self.train_x = train_x
             self.train_y = train_y
@@ -88,64 +95,80 @@ class PILCOAgent:
         self.gp_model.train()
         self.likelihood.train()
         optimizer = torch.optim.Adam(self.gp_model.parameters(), lr=learning_rate)
-        mll = ExactMarginalLogLikelihood(self.likelihood, self.gp_model)
+        mll = ExactMarginalLogLikelihood(self.likelihood, self.gp_model).to(self.device)
         for i in range(epochs):
             optimizer.zero_grad()
             output = self.gp_model(self.train_x)
-            # print('shape of the output mean:', output.mean.shape)  # 应该是 (601, 4)
-            # print('shape of the train_y:', self.train_y.shape)  # 应该是 (601, 4)
+            print('shape of the output mean:', output.mean.shape)  # 应该是 (batch_size, 4)
+            print('shape of the train_y:', self.train_y.shape)  # 应该是 (batch_size, 4)
             loss = -mll(output, self.train_y)
             loss.backward()
             optimizer.step()
-
-    def update(self, rewards, log_probs, states, actions, next_states):
-        discounted_rewards = []
-        cumulative_reward = 0
-        for reward in reversed(rewards):
-            cumulative_reward = reward + self.gamma * cumulative_reward
-            discounted_rewards.insert(0, cumulative_reward)
-        discounted_rewards = torch.FloatTensor(discounted_rewards).unsqueeze(1)  # 确保 discounted_rewards 的形状为 [601, 1]
-
-        log_probs = torch.stack(log_probs)
-        states = torch.FloatTensor(np.array(states))
-        actions = torch.FloatTensor(np.array(actions)).unsqueeze(1)  # 确保 actions 维度正确
-        next_states = torch.FloatTensor(np.array(next_states))
-
-        # 预测状态差值 delta_states
-        delta_states = next_states - states  # delta_states 的维度应该是 (601, 6)
-
-        # 确保 train_x 和 train_y 维度匹配
-        train_x = torch.cat([states, actions], dim=-1)  # train_x 的维度是 (601, 7)
-        train_y = delta_states  # 预测 delta_states，维度是 (601, 6)
-
-        self.create_gp_model(train_x, train_y)
-        self.train_gp_model()
-
-        predicted_deltas = self.predict_next_state(states, actions).squeeze()
-        predicted_next_states = states + predicted_deltas
-
-        # 使用 current_reward 函数计算 predicted_next_states 的奖励
-        predicted_rewards = torch.FloatTensor([current_reward(state) for state in predicted_next_states])
-
-        # print('shape of discounted rewards: ', discounted_rewards.shape)  # 应该是 (601, 1)
-        # print('shape of predicted rewards: ', predicted_rewards.shape)  # 应该是 (601, 1)
-
-        advantages = discounted_rewards - predicted_rewards.unsqueeze(1)  # 确保 predicted_rewards 的形状为 [601, 1]
-
-        # 更新策略网络
-        policy_loss = -torch.sum(log_probs * advantages.detach())
-        self.optimizer_policy.zero_grad()
-        policy_loss.backward()
-        self.optimizer_policy.step()
 
     def predict_next_state(self, states, actions):
         self.gp_model.eval()
         self.likelihood.eval()
         with torch.no_grad(), gpytorch.settings.fast_pred_var():
-            state_action = torch.cat([states, actions], dim=-1)
+            state_action = torch.cat([states, actions], dim=-1).to(self.device)
             observed_pred = self.likelihood(self.gp_model(state_action))
             mean = observed_pred.mean
         return mean
+
+    def store_sample(self, state, action, reward, log_prob, next_state):
+        self.states.append(state)
+        self.actions.append(action)
+        self.rewards.append(reward)
+        self.log_probs.append(log_prob)
+        self.next_states.append(next_state)
+
+    def update(self):
+        if len(self.states) >= self.batch_size:
+            discounted_rewards = []
+            cumulative_reward = 0
+            for reward in reversed(self.rewards[-self.batch_size:]):
+                cumulative_reward = reward + self.gamma * cumulative_reward
+                discounted_rewards.insert(0, cumulative_reward)
+            discounted_rewards = torch.FloatTensor(discounted_rewards).unsqueeze(1).to(self.device)  # 确保 discounted_rewards 的形状为 [batch_size, 1]
+
+            log_probs = torch.stack(self.log_probs[-self.batch_size:]).to(self.device)
+            states = torch.FloatTensor(np.array(self.states[-self.batch_size:])).to(self.device)
+            actions = torch.FloatTensor(np.array(self.actions[-self.batch_size:])).unsqueeze(1).to(self.device)  # 确保 actions 维度正确
+            next_states = torch.FloatTensor(np.array(self.next_states[-self.batch_size:])).to(self.device)
+
+            # 预测状态差值 delta_states
+            delta_states = next_states - states  # delta_states 的维度应该是 (batch_size, 6)
+
+            # 确保 train_x 和 train_y 维度匹配
+            train_x = torch.cat([states, actions], dim=-1)  # train_x 的维度是 (batch_size, 7)
+            train_y = delta_states  # 预测 delta_states，维度是 (batch_size, 6)
+
+            self.create_gp_model(train_x, train_y)
+            self.train_gp_model()
+
+            predicted_deltas = self.predict_next_state(states, actions).squeeze()
+            predicted_next_states = states + predicted_deltas
+
+            # 使用 current_reward 函数计算 predicted_next_states 的奖励
+            predicted_rewards = torch.FloatTensor([current_reward(state) for state in predicted_next_states]).to(self.device)
+
+            # 计算每个时间步的折扣因子
+            discount_factors = torch.FloatTensor([self.gamma ** t for t in range(len(self.rewards[-self.batch_size:]))]).unsqueeze(1).to(self.device)
+
+            advantages = discounted_rewards - (predicted_rewards.unsqueeze(1) * discount_factors)  # 确保 predicted_rewards 的形状为 [batch_size, 1]
+
+            # 更新策略网络
+            policy_loss = -torch.sum(log_probs * advantages.detach())
+            self.optimizer_policy.zero_grad()
+            policy_loss.backward()
+            self.optimizer_policy.step()
+
+            # 清除已使用的样本
+            self.states = self.states[-self.batch_size:]
+            self.actions = self.actions[-self.batch_size:]
+            self.rewards = self.rewards[-self.batch_size:]
+            self.log_probs = self.log_probs[-self.batch_size:]
+            self.next_states = self.next_states[-self.batch_size:]
+
 
     def save_model(self, path: str):
         torch.save({

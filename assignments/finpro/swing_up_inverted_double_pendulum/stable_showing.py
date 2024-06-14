@@ -32,8 +32,8 @@ if __name__ == "__main__":
 
     obs_space_dims = 6
     action_space_dims = model.nu
-    agent = tools.DDPGAgent(obs_space_dims, 1)
-    read_model_path = "stable_2024-06-14-12-44-36/temp_model_save_at_epoch_1800.pth"
+    agent = tools.DDPGAgent(obs_space_dims, 1, a_bound=2)
+    read_model_path = "stable_2024-06-14-14-09-04/swing_up.pth"
     # save_model_path = "swing_up.pth"
     try:
         agent.load_model(read_model_path)
