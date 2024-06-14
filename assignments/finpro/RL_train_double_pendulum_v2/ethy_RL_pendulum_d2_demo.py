@@ -84,21 +84,21 @@ if __name__ == "__main__":
                     ####################################
                     ### commit the following line to speed up the training
                     ####################################
-                    # with viewer.lock():
-                    #     viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = int(data.time % 2)
-                    # viewer.sync()
-                    #
-                    # time_until_next_step = model.opt.timestep - (time.time() - step_start)
-                    # if time_until_next_step > 0:
-                    #     time.sleep(time_until_next_step)
+                    with viewer.lock():
+                        viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = int(data.time % 2)
+                    viewer.sync()
+
+                    time_until_next_step = model.opt.timestep - (time.time() - step_start)
+                    if time_until_next_step > 0:
+                        time.sleep(time_until_next_step)
                     ####################################
                     ####################################
 
                 agent.update(rewards, log_probs, states)
                 episode += 1
-                if episode % auto_save_epochs == 0:
-                    agent.save_model(f"{current_time}/temp_model_save_at_epoch_{episode}.pth")
-            agent.save_model(f"{current_time}/{save_model_path}")
+                # if episode % auto_save_epochs == 0:
+                    # agent.save_model(f"{current_time}/temp_model_save_at_epoch_{episode}.pth")
+            # agent.save_model(f"{current_time}/{save_model_path}")
     except KeyboardInterrupt:
-        agent.save_model(f"{current_time}/autosave.pth")
+        # agent.save_model(f"{current_time}/autosave.pth")
         print("Training interrupted. Model saved.")

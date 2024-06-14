@@ -4,7 +4,7 @@
 		<joint armature="0" damping="1" limited="true"/>
 		<geom contype="0" friction="1 0.1 0.1" rgba="0.7 0.7 0 1"/>
 		<tendon/>
-		<motor ctrlrange="-50 50"/>
+		<motor ctrlrange="-10 10"/>
 	</default>
 	<option gravity="0 0 -9.81" integrator="RK4" timestep="0.02"/>
 	<size nstack="3000"/>
@@ -25,6 +25,6 @@
 		</body>
 	</worldbody>
 	<actuator>
-		<motor ctrllimited="true" ctrlrange="-50 50" gear="100" joint="slider" name="slide"/>
+		<motor ctrllimited="true" ctrlrange="-10 10" gear="100" joint="slider" name="slide"/>
 	</actuator>
 </mujoco>
