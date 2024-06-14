@@ -65,13 +65,13 @@ def video_record(mujoco_model, mujoco_data, video_writer):
 
 if __name__ == "__main__":
     xml_path = "Lifer_inverted_swing_pendulum.xml"
-    model_path_a = "models_v4/a/temp_1718280826_epoch_5000000.zip"
-    model_path_b = "models_v4/b/temp_1718304517_epoch_500000.zip"
+    model_path_a = "models_v4/a/temp_1718342216_epoch_1000000.lifer"
+    model_path_b = "models_v4/b/temp_1718311298_epoch_2000000.lifer"
     model, data = tools.init_mujoco(xml_path)
     window = init_glfw()
 
-    if_random_seed = 1
-    seed = random.randint(0, 100000) if if_random_seed else 39858
+    if_random_seed = 0
+    seed = random.randint(0, 100000) if if_random_seed else 69521
     print(f'The seed is: {seed}')
 
     if window:
@@ -112,7 +112,7 @@ if __name__ == "__main__":
                     else:
                         action, _ = agent_b.predict(state)
 
-                    data.ctrl[0] = action[0]  # Ensure action is correctly assigned
+                    data.ctrl[0] = action[0] * 3.0  # Ensure action is correctly assigned
                     mujoco.mj_step(model, data)
 
                     done = data.time > 450  # Example condition to end episode

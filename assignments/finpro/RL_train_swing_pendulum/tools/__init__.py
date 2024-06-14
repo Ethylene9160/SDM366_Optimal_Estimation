@@ -42,11 +42,11 @@ class CustomEnv_a(gym.Env):
         self.theta_threshold = theta_threshold
 
         # Define action and observation space
-        self.action_space = spaces.Box(low=-3, high=3, shape=(model.nu,), dtype=np.float32)
+        self.action_space = spaces.Box(low=-1, high=1, shape=(model.nu,), dtype=np.float32)
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(6,), dtype=np.float32)
 
     def step(self, action):
-        self.data.ctrl[0] = action
+        self.data.ctrl[0] = action * 3.0
         mujoco.mj_step(self.model, self.data)
         state = self._get_obs()
 
@@ -92,11 +92,11 @@ class CustomEnv_b(gym.Env):
         self.max_time = max_time
 
         # Define action and observation space
-        self.action_space = spaces.Box(low=-3, high=3, shape=(model.nu,), dtype=np.float32)
+        self.action_space = spaces.Box(low=-1, high=1, shape=(model.nu,), dtype=np.float32)
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(6,), dtype=np.float32)
 
     def step(self, action):
-        self.data.ctrl[0] = action
+        self.data.ctrl[0] = action * 3.0
         mujoco.mj_step(self.model, self.data)
         state = self._get_obs()
         reward = self.reward_function(state, action)

@@ -42,10 +42,10 @@ if __name__ == "__main__":
     os.makedirs(f"outputs_v4/{current_time}/a", exist_ok=True)
     os.makedirs(f"outputs_v4/{current_time}/b", exist_ok=True)
 
-    total_num_episodes = 500000
+    total_num_episodes = 2000000
 
-    read_model_b_path = "models_v4/b/temp_1718304517_epoch_500000.zip"
-    # read_model_b_path = ""
+    read_model_b_path = "models_v4/b/temp_1718311298_epoch_2000000.lifer"
+    read_model_b_path = ""
 
     env_b = tools.CustomEnv_b(model, data, calculate_reward_b)
 
