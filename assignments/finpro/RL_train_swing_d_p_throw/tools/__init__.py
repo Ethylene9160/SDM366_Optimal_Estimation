@@ -10,9 +10,8 @@ import torch
 import torch.nn as nn
 from gymnasium import spaces
 
-
-from . import DDPG
 from . import A2C
+from . import DDPG
 
 
 def save_model(model: nn.Module, path: str):
@@ -60,7 +59,10 @@ class CustomEnv(gym.Env):
 
         _, _, y = self.data.site_xpos[0]
         h_reward = y ** 2 if y > 1.0 else 0
-        reward += 10.0 * h_reward
+        reward += 1.0 * h_reward
+
+        if is_stable(self.data):
+            reward += 100.0
 
         reward = float(reward)
 
@@ -99,12 +101,12 @@ def init_mujoco(model_path):
 
 def random_state(data, seed=2333):
     np.random.seed(seed)
-    init_x = np.random.uniform(-0.1, 0.1)
+    init_x = np.random.uniform(-0.01, 0.01)
     init_theta1 = np.random.uniform(-0.1, 0.1) - np.pi
     init_theta2 = np.random.uniform(-0.1, 0.1) - np.pi
-    init_v = np.random.uniform(-1.0, 1.0)
-    init_omega1 = np.random.uniform(-0.5, 0.5)
-    init_omega2 = np.random.uniform(-0.5, 0.5)
+    init_v = np.random.uniform(-0.01, 0.01)
+    init_omega1 = np.random.uniform(-0.01, 0.01)
+    init_omega2 = np.random.uniform(-0.01, 0.01)
     data.qpos[0] = init_x
     data.qpos[1] = init_theta1
     data.qpos[2] = init_theta2
@@ -126,3 +128,14 @@ def get_obs_lifer(data):
     ).ravel()
     # state = [x, theta 1, theta 2, v, omega 1, omega 2, sin(theta 1), sin(theta 2), cos(theta 1), cos(theta 2)]
     return state
+
+
+def is_stable(data):
+    if abs(data.qpos[1]) < 0.2 and \
+            abs(data.qpos[2]) < 0.2 and \
+            abs(data.qvel[0]) < 0.5 and \
+            abs(data.qvel[1]) < 1.0 and \
+            abs(data.qvel[2]) < 1.0:
+        return True
+    # return not is_unstable(data)
+    return False
