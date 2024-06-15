@@ -333,15 +333,13 @@ def z2x_getFootPosition(leftP, rightP, leftV, rightV, contact):
     
     qpos = np.zeros(robot.model.nq)
     qvel = np.zeros(robot.model.nv)
+    # print(robot.model.nq)
     
-    # qpos[:3] = leftP
-    # qpos[7:10] = rightP
-    # qvel[:3] = leftV
-    # qvel[7:10] = rightV
-    qpos[14:17] = leftP
-    qpos[17:20] = rightP
-    qvel[12:15] = leftV
-    qvel[15:18] = rightV
+    # 将左右脚的位置和速度放入配置向量中
+    qpos[7:10] = leftP
+    qpos[10:13] = rightP
+    qvel[6:9] = leftV
+    qvel[9:12] = rightV
     
     # 计算正运动学和雅可比矩阵
     pin.forwardKinematics(robot.model, robot.data, qpos, qvel)
@@ -362,17 +360,10 @@ def z2x_getFootPosition(leftP, rightP, leftV, rightV, contact):
     v_foot_R = J_foot_R[:3, :] @ qvel  # 提取线速度部分
 
     foot_L_pos_body = foot_L_to_base.translation
-    # foot_L_pos_body = np.array([-foot_L_pos_body[1], -foot_L_pos_body[0], foot_L_pos_body[2]])
     foot_R_pos_body = foot_R_to_base.translation
-    # foot_R_pos_body = np.array([foot_R_pos_body[1], foot_R_pos_body[0], foot_R_pos_body[2]])
-    # v_foot_L_body = foot_L_to_base.rotation @ v_foot_L
-    # v_foot_L_body = np.array([v_foot_L_body[1], v_foot_L_body[0], v_foot_L_body[2]])
-    # v_foot_R_body = foot_R_to_base.rotation @ v_foot_R
-    # v_foot_R_body = np.array([v_foot_R_body[1], v_foot_R_body[0], v_foot_R_body[2]])
-    v_foot_L_body = pin.getFrameVelocity(robot.model, robot.data, foot_L_id, pin.ReferenceFrame.LOCAL).linear
-    v_foot_R_body = pin.getFrameVelocity(robot.model, robot.data, foot_R_id, pin.ReferenceFrame.LOCAL).linear
+    v_foot_L_body = foot_L_to_base.rotation @ v_foot_L
+    v_foot_R_body = foot_R_to_base.rotation @ v_foot_R
 
-    # 输出结果是[3,]维度
     return foot_L_pos_body, foot_R_pos_body, v_foot_L_body, v_foot_R_body
     
 
