@@ -93,9 +93,6 @@ class MuJoCoSim:
         self.commands[3] = 0.625  # base height
 
         # 自定义变量
-        self.last_quaternion = np.quaternion(1, 0, 0, 0)
-        self.lastBPL = np.zeros(3)
-        self.lastBPR = np.zeros(3)
         self.x = np.array([0, 0, 0.625, 0, 0, 0, -0.0696, 0.095, 0, -0.0696, -0.095, 0]).T
         self.P = np.eye(12) * 0.01
         self.EKF_Q = np.eye(12)
@@ -108,7 +105,6 @@ class MuJoCoSim:
         self.EKF_R[:6, :6] = np.eye(6) * 0.01
         self.EKF_R[6:12, 6:12] = np.eye(6) * 0.01
         self.EKF_R[12:14, 12:14] = np.eye(2) * 0.01
-        self.W = np.zeros([3])
 
     def get_joint_state(self):
         """Retrieve the joint position and velocity states."""
@@ -192,7 +188,7 @@ class MuJoCoSim:
             step_start = time.time()
             proprioception_obs = self.compute_obs()  #
             if self.iter_ % self.decimation == 0:
-                # proprioception_obs = self.compute_obs() #
+                # proprioception_obs = self.compute_obs() # 原来的
                 action = (
                     self.policy(torch.tensor(proprioception_obs))[0].detach().numpy()
                 )
