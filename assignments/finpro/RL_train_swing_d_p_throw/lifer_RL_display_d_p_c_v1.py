@@ -110,12 +110,6 @@ if __name__ == "__main__":
                 isStable = False
 
                 while not done:
-                    state = tools.get_obs_lifer(data) if not isStable else tools.get10obs(data)
-
-                    action, _ = agent_throw.predict(state) if not isStable else agent_catch.sample_action(state)
-                    data.ctrl[0] = action[0] if not isStable else action
-
-                    mujoco.mj_step(model, data)
 
                     if isStable:
                         if is_unstable(data):
@@ -125,6 +119,13 @@ if __name__ == "__main__":
                         if is_stable(data):
                             isStable = True
                             print("Catching...")
+
+                    state = tools.get_obs_lifer(data) if not isStable else tools.get10obs(data)
+
+                    action, _ = agent_throw.predict(state) if not isStable else agent_catch.sample_action(state)
+                    data.ctrl[0] = action[0] if not isStable else action
+
+                    mujoco.mj_step(model, data)
 
                     done = data.time > 30
                     render(window, model, data)
