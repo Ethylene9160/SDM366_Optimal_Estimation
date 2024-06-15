@@ -22,10 +22,10 @@ if __name__ == "__main__":
     obs_space_dims = 10
     action_space_dims = model.nu
 
-    read_model_path = "models/v1/temp_1718436337_steps_2000896.pth"
+    read_model_path = "models/v1/temp_1718442370_steps_501760.pth"
     # read_model_path = ""
 
-    env = tools.CustomEnv(model, data, max_time=15)
+    env = tools.CustomEnv(model, data, max_time=30)
     check_env(env)
 
     try:

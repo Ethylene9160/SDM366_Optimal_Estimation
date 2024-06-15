@@ -11,7 +11,7 @@
   <size nstack="3000"/>
   <worldbody>
     <geom name="floor" pos="0 0 -3.0" rgba="0.8 0.9 0.8 1" size="40 40 40" type="plane"/>
-    <geom name="rail" pos="0 0 0" quat="0.707 0 0.707 0" rgba="0.3 0.3 0.7 1" size="0.02 3" type="capsule"/>
+    <geom name="rail" pos="0 0 0" quat="0.707 0 0.707 0" rgba="0.3 0.3 0.7 1" size="0.02 1" type="capsule"/>
     <body name="cart" pos="0 0 0">
       <joint axis="1 0 0" limited="true" margin="0.01" name="slider" pos="0 0 0" range="-1.0 1.0" type="slide"/>
       <geom name="cart" pos="0 0 0" quat="0.707 0 0.707 0" size="0.1 0.1" type="capsule"/>
