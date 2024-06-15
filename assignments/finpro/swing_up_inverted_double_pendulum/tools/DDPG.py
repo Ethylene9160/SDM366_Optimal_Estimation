@@ -21,7 +21,7 @@ class DDPGAgent:
 
         self.memory = np.zeros((memory, no_of_states * 2 + no_of_actions + 1), dtype=np.float32)
         self.pointer = 0
-        self.noise_variance = 0.03
+        self.noise_variance = 1.0
 
         self.actor_eval = self.build_actor_network().to(self.device)
         self.actor_target = self.build_actor_network().to(self.device)

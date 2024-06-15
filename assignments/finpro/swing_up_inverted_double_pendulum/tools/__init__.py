@@ -16,6 +16,7 @@ from .DDPG import DDPGAgent
 from .A2C import A2CAgent
 from .Q import QLearningAgent
 from .DQN import DQNAgent
+from .PILCO import PILCOAgent, current_reward
 
 
 np.random.seed(0)
@@ -29,9 +30,24 @@ def random_state(data):
     x = np.random.uniform(-0.1, 0.1)
     theta1 = np.random.uniform(-0.2, 0.2)
     theta2 = np.random.uniform(-0.2, 0.2)
-    dx = np.random.uniform(-1.1, 1.1)
-    dtheta1 = np.random.uniform(-0.8, 0.8)
-    dtheta2 = np.random.uniform(-1.1, 1.1)
+    dx = np.random.uniform(-0.3, 0.3)
+    dtheta1 = np.random.uniform(-0.2, 0.2)
+    dtheta2 = np.random.uniform(-0.2, 0.2)
+
+def large_random(data):
+    x = np.random.uniform(-1, 1)
+    theta1 = np.random.uniform(-np.pi, np.pi)
+    theta2 = np.random.uniform(-np.pi, np.pi)
+    dx = np.random.uniform(-2, 2)
+    dtheta1 = np.random.uniform(-3, 3)
+    dtheta2 = np.random.uniform(-3, 3)
+    data.qpos[0] = x
+    data.qpos[1] = theta1
+    data.qpos[2] = theta2
+    data.qvel[0] = dx
+    data.qvel[1] = dtheta1
+    data.qvel[2] = dtheta2
+
 
 def get_obs(data):
     '''
@@ -55,6 +71,29 @@ def get_obs(data):
         ]
     ).ravel()
 
+def get10obs(data):
+    # return np.concatenate(
+    #     [
+    #         data.qpos[:1],  # cart x pos
+    #         np.sin(data.qpos[1:]),  # link angles
+    #         np.cos(data.qpos[1:]),
+    #         np.clip(data.qvel, -10, 10),
+    #         np.clip(data.qfrc_constraint, -10, 10),
+    #     ]
+    # ).ravel()
+    theta = data.qpos[1:]
+    theta = np.where(theta >= np.pi, theta - np.pi, theta)
+    theta = np.where(theta < -np.pi, theta + np.pi, theta)
+    return np.concatenate(
+        [
+            data.qpos[:1],
+            theta,
+            data.qvel,
+            np.sin(data.qpos[1:]),
+            np.cos(data.qpos[1:])
+        ]
+    ).ravel()
+
 def f(xk, uk):
     '''
     xk[0]: x of the cart
@@ -67,3 +106,9 @@ def f(xk, uk):
     xk_star = 0
     yk_star = 0
     return xk_star, yk_star
+
+# C = np.array([
+#     [1,-0.5,0,-0.5,0],
+#     [0,0,0.5,0,0.5]])
+#
+# print(C.T@C)
