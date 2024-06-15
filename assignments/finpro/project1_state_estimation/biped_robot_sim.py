@@ -44,6 +44,8 @@ robot = RobotWrapper.BuildFromURDF(urdf_path, package_dirs=package_dirs, root_jo
 # Flag to indicate whether to use the simulation environment
 USE_SIM = False  # TODO: you should change to False to implement your own state estimator
 
+withPinocchio = True # To set True if you want to use pinocchio to calculate the foot position
+
 timestep = 0.001
 
 # 改用全局变量来设置噪声。
@@ -318,7 +320,7 @@ def z2x_Obserbation(BPL, BPR, BVL, BVR, W, quat, contact_info, x_pcom, v_pcom):
     v_1 = (1 - trust_L) * v_pcom + trust_L * (-matrix_q @ (np.cross(W, FRAME_BPL) + BVL))
     v_2 = (1 - trust_R) * v_pcom + trust_R * (-matrix_q @ (np.cross(W, FRAME_BPR) + BVR))
     z = np.concatenate((-matrix_q@BPL,
-                        -mtrix_q@BPR,  # error?
+                        -matrix_q@BPR,  # error?
                         v_1.reshape((3,)),
                         v_2.reshape((3,)),
                         np.array([0.037062]),
@@ -330,42 +332,121 @@ def z2x_getFootPosition(leftP, rightP, leftV, rightV, contact):
     """
     得到在Body坐标系下的左右脚的位置和速度
     """
-    
-    qpos = np.zeros(robot.model.nq)
-    qvel = np.zeros(robot.model.nv)
-    # print(robot.model.nq)
-    
-    # 将左右脚的位置和速度放入配置向量中
-    qpos[7:10] = leftP
-    qpos[10:13] = rightP
-    qvel[6:9] = leftV
-    qvel[9:12] = rightV
-    
-    # 计算正运动学和雅可比矩阵
-    pin.forwardKinematics(robot.model, robot.data, qpos, qvel)
-    pin.updateFramePlacements(robot.model, robot.data)
+    if withPinocchio == True:
+        qpos = np.zeros(robot.model.nq)
+        qvel = np.zeros(robot.model.nv)
+        # print(robot.model.nq)
+        
+        # 将左右脚的位置和速度放入配置向量中
+        qpos[7:10] = leftP
+        qpos[10:13] = rightP
+        qvel[6:9] = leftV
+        qvel[9:12] = rightV
+        
+        # 计算正运动学和雅可比矩阵
+        pin.forwardKinematics(robot.model, robot.data, qpos, qvel)
+        pin.updateFramePlacements(robot.model, robot.data)
 
-    foot_L_id = robot.model.getFrameId("foot_L")
-    foot_R_id = robot.model.getFrameId("foot_R")
-    
-    foot_L_to_base = robot.data.oMf[foot_L_id]  # 从base_Link到foot_L的转换矩阵
-    foot_R_to_base = robot.data.oMf[foot_R_id]  # 从base_Link到foot_R的转换矩阵
-    
-    # 计算Jacobian矩阵
-    J_foot_L = pin.computeFrameJacobian(robot.model, robot.data, qpos, foot_L_id, pin.LOCAL)
-    J_foot_R = pin.computeFrameJacobian(robot.model, robot.data, qpos, foot_R_id, pin.LOCAL)
-    
-    # 提取左右脚的速度
-    v_foot_L = J_foot_L[:3, :] @ qvel  # 提取线速度部分
-    v_foot_R = J_foot_R[:3, :] @ qvel  # 提取线速度部分
+        foot_L_id = robot.model.getFrameId("foot_L")
+        foot_R_id = robot.model.getFrameId("foot_R")
+        
+        foot_L_to_base = robot.data.oMf[foot_L_id]  # 从base_Link到foot_L的转换矩阵
+        foot_R_to_base = robot.data.oMf[foot_R_id]  # 从base_Link到foot_R的转换矩阵
+        
+        # 计算Jacobian矩阵
+        J_foot_L = pin.computeFrameJacobian(robot.model, robot.data, qpos, foot_L_id, pin.LOCAL)
+        J_foot_R = pin.computeFrameJacobian(robot.model, robot.data, qpos, foot_R_id, pin.LOCAL)
+        
+        # 提取左右脚的速度
+        v_foot_L = J_foot_L[:3, :] @ qvel  # 提取线速度部分
+        v_foot_R = J_foot_R[:3, :] @ qvel  # 提取线速度部分
 
-    foot_L_pos_body = foot_L_to_base.translation
-    foot_R_pos_body = foot_R_to_base.translation
-    v_foot_L_body = foot_L_to_base.rotation @ v_foot_L
-    v_foot_R_body = foot_R_to_base.rotation @ v_foot_R
-
-    return foot_L_pos_body, foot_R_pos_body, v_foot_L_body, v_foot_R_body
+        foot_L_pos_body = foot_L_to_base.translation
+        foot_R_pos_body = foot_R_to_base.translation
+        v_foot_L_body = foot_L_to_base.rotation @ v_foot_L
+        v_foot_R_body = foot_R_to_base.rotation @ v_foot_R
+        return foot_L_pos_body, foot_R_pos_body, v_foot_L_body, v_foot_R_body
     
+    else:
+        # without pinocchio, manually create the DH table
+        theta1, theta2, theta3 = leftP
+        w1, w2, w3 = leftV
+        w1 = np.array([0, 0, 1]) * w1
+        w2 = np.array([0, 0, 1]) * w2
+        w3 = np.array([0, 0, 1]) * w3
+        W = [np.zeros(3), w1, w2, w3, np.zeros(3)]
+        args = (np.arctan2(0.0095, 0.7976), np.arctan2(0.15, 0.25981), np.arctan2(0.15, 0.25981) + np.arctan2(0.15, 0.25566))
+        DH_TABLE_L = [
+        (0.0, 0.0, 0.0, args[0]),
+        (np.sqrt(0.25981**2+0.15**2), 0.0, 0.34, -args[0] + theta1),
+        (0.0, np.pi/2, 0.0, theta2 + args[1]),
+        (np.sqrt(0.15**2+0.25981**2), np.pi, 0.0, theta3 + args[2]),
+        (np.sqrt(0.15**2+0.25566**2), 0.0, 0.0, 0.0)
+        ]
+        T_L = np.array([
+            [0, 0, 1, 0],
+            [0, 1, 0, 0],
+            [-1, 0, 0, 0],
+            [0, 0, 0, 1]
+        ])
+        v_L = np.array([0, 0, 0]).T
+        for i, params in enumerate(DH_TABLE_L):
+            Tn = dh_transform(params)
+            v_L = Tn[:3, :3] @ (v_L + np.cross(W[i], Tn[:3, -1]))
+            T_L = np.dot(T_L, Tn)  # 累积变换
+        v_L = T_L[:3, :3] @ v_L # change 3v3 to 0v3
+        v_L = np.array([v_L[2], v_L[1], -v_L[0]])
+        footPosition_L = T_L[:3, -1]  
+
+        # right foot
+        theta4, theta5, theta6 = rightP
+        w4, w5, w6 = rightV
+        w4 = np.array([0, 0, 1]) * w4
+        w5 = np.array([0, 0, 1]) * w5
+        w6 = np.array([0, 0, 1]) * w6
+        W = [np.zeros(3), w4, w5, w6, np.zeros(3)]
+        args = (np.arctan2(0.0095, 0.7976), np.arctan2(0.15, 0.25981), np.arctan2(0.15, 0.25981) + np.arctan2(0.15, 0.25566))
+        DH_TABLE_R = [
+        (0.0, 0.0, 0.0, -args[0]),
+        (np.sqrt(0.25981**2+0.15**2), 0.0, 0.34, args[0] + theta4),
+        (0.0, np.pi/2, 0.0, theta5 - args[1]),
+        (np.sqrt(0.15**2+0.25981**2), np.pi, 0.0, theta6 - args[2]),
+        (np.sqrt(0.15**2+0.25566**2), 0.0, 0.0, 0.0)
+        ]
+        T_R = np.array([
+            [0, 0, 1, 0],
+            [0, 1, 0, 0],
+            [-1, 0, 0, 0],
+            [0, 0, 0, 1]
+        ])
+        v_R = np.array([0, 0, 0]).T
+        for i, params in enumerate(DH_TABLE_R):
+            Tn = dh_transform(params)
+            v_R = Tn[:3, :3] @ (v_R + np.cross(W[i], Tn[:3, -1]) ) ##？？？？
+            T_R = np.dot(T_R, Tn)  # 累积变换
+        v_R = T_R[:3, :3] @ v_R # change 3v3 to 0v3d
+        v_R = np.array([v_R[2], v_R[1], -v_R[0]])
+        footPosition_R = T_R[:3, -1]  
+        return footPosition_L.T, footPosition_R.T, v_L, v_R
+
+# 转换矩阵函数
+def dh_transform(params):
+    a = params[0]
+    alpha = params[1]
+    d = params[2]
+    theta = params[3]
+    # 创建转换矩阵
+    c_theta = np.cos(theta)
+    s_theta = np.sin(theta)
+    c_alpha = np.cos(alpha)
+    s_alpha = np.sin(alpha)
+    T = np.array([
+        [c_theta, -s_theta*c_alpha,  s_theta*s_alpha, a*c_theta],
+        [s_theta,  c_theta*c_alpha, -c_theta*s_alpha, a*s_theta],
+        [0,       s_alpha,           c_alpha,           d],
+        [0,       0,                 0,                 1],
+    ])
+    return T
 
 @hydra.main(
     version_base=None,
