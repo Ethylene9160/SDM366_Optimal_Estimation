@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 
 import numpy as np
@@ -14,10 +15,8 @@ import time
 
 import tools
 
-
-
 if __name__ == "__main__":
-    xml_path = "inverted_pendulum.xml"
+    xml_path = "inverted_swing_pendulum.xml"
     current_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 
     model, data = tools.init_mujoco(xml_path)
@@ -25,22 +24,21 @@ if __name__ == "__main__":
 
     obs_space_dims = 4
     action_space_dims = model.nu
-    agent = tools.A2CAgent(obs_space_dims, action_space_dims, lr=3e-4, gamma = 0.99)
-    # model_path = ""
-    read_model_path = "models/ethy_official_model_fimal.pth"
+    agent = tools.A2CAgent(obs_space_dims, action_space_dims, lr=5e-4, gamma = 0.95)
+    model_path = ""
+    read_model_path = "2024-06-07-22-27-53/a2c_policy_v2.pth"
     save_model_path = "a2c_policy_v2.pth"
     try:
         agent.load_model(read_model_path)
     except FileNotFoundError:
         print(f"No saved model found at {read_model_path}. Starting from scratch.")
 
-    auto_save_epochs = 1000
+    auto_save_epochs = 200
 
     try:
-
         # create viewer
         with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
-            total_num_episodes = int(20000)
+            total_num_episodes = int(5000)
             episode = 0
             while viewer.is_running() and episode < total_num_episodes:
                 rewards = []
@@ -52,27 +50,30 @@ if __name__ == "__main__":
 
                 # 重置环境到初始状态
                 mujoco.mj_resetData(model, data)
-                tools.random_state(data)
-                alive_bonus = 10.0
+                data.qpos[1] = -np.pi
+                alive_bonus = 100.0
                 while not done:
                     step_start = time.time()
                     state = tools.get_obs(data)
                     action, log_prob = agent.sample_action(state)
                     data.ctrl[0] = action
                     mujoco.mj_step(model, data)
-
                     ######  Calculate the Reward #######
-                    reward = 1.0
+                    # reward = -0.4*data.qpos[0]**2 - 0.6*data.qpos[1]**2 - 0.001*data.qvel[1]**2
+                    reward = -0.1*(5*data.qpos[1]**2+data.qpos[0]**2+0.05*action**2)
+                    if abs(data.qpos[0]) > 1.8:
+                        reward -= alive_bonus
+                        # reward += 0.001*action**2
+                    # if abs(data.qpos[1]) < 1.5:
+                    #     reward += 1.0 - 0.005*action**2  - 0.1*data.qvel[1]**2 - 0.1*data.qvel[0]**2 - 0.1*data.qpos[0]**2
+                        # reward -=
                     ###### End. The same as the official model ########
-                    ###### SUPPLIMENT: to better the performance ########
-                    pennity = 0.8*data.qpos[0]**2+0.001*data.qvel[0]**2+0.1*data.qvel[1]**2
-                    reward -= pennity
-                    ###### End calculating the reward #######
 
                     rewards.append(reward)
                     log_probs.append(log_prob)
+
                     states.append(state.copy())
-                    done = data.time > 20 or abs(data.qpos[1]) > 0.18  # Example condition to end episode
+                    done = data.time > 25  # Example condition to end episode
 
                     ####################################
                     ### commit the following line to speed up the training
