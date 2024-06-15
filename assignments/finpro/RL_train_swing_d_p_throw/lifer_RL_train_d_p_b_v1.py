@@ -34,7 +34,7 @@ if __name__ == "__main__":
         print(f"No saved model found at {read_model_path}. Starting from scratch.")
         agent = PPO('MlpPolicy', env, verbose=1, learning_rate=1e-4)
 
-    total_time_steps = 500000
+    total_time_steps = 2000000
     episode_rewards = []
 
 

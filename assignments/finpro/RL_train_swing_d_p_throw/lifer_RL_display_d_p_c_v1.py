@@ -110,15 +110,11 @@ if __name__ == "__main__":
                 isStable = False
 
                 while not done:
-                    state = tools.get_obs_lifer(data)
-
-                    # state_theta_1 = np.arctan2(state[6], state[8])
-                    # state_theta_2 = np.arctan2(state[7], state[9])
-                    # x, _, y = data.site_xpos[0]
-                    # print(f"theta: {state_theta_1 + state_theta_2}, x: {x}, y: {y}")
+                    state = tools.get_obs_lifer(data) if not isStable else tools.get10obs(data)
 
                     action, _ = agent_throw.predict(state) if not isStable else agent_catch.sample_action(state)
                     data.ctrl[0] = action[0] if not isStable else action
+
                     mujoco.mj_step(model, data)
 
                     if isStable:

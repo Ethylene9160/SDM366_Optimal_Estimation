@@ -130,6 +130,21 @@ def get_obs_lifer(data):
     return state
 
 
+def get10obs(data):
+    theta = data.qpos[1:]
+    theta = np.where(theta >= np.pi, theta - np.pi, theta)
+    theta = np.where(theta < -np.pi, theta + np.pi, theta)
+    return np.concatenate(
+        [
+            data.qpos[:1],
+            theta,
+            data.qvel,
+            np.sin(data.qpos[1:]),
+            np.cos(data.qpos[1:])
+        ]
+    ).ravel()
+
+
 def is_stable(data):
     if abs(data.qpos[1]) < 0.2 and \
             abs(data.qpos[2]) < 0.2 and \
