@@ -1,3 +1,5 @@
+from typing import Mapping, Any
+
 import numpy as np
 import torch
 import time
@@ -12,13 +14,18 @@ torch.set_default_dtype(torch.float32)
 
 
 class PILCO(torch.nn.Module):
-    def __init__(self, X, Y, num_induced_points=None, horizon=30, controller=None,
-                reward=None, m_init=None, S_init=None, name=None):
+    def __init__(self, X, Y, num_induced_points=None,
+                 horizon=30,
+                 controller=None,
+                reward=None,
+                 m_init=None,
+                 S_init=None,
+                 name=None):
         super(PILCO, self).__init__()
-        if not num_induced_points:
-            self.mgpr = MGPR(X, Y)
-        else:
-            self.mgpr = SMGPR(X, Y, num_induced_points)
+        # if not num_induced_points:
+        self.mgpr = MGPR(X, Y)
+        # else:
+        #     self.mgpr = SMGPR(X, Y, num_induced_points)
         self.state_dim = Y.shape[1]
         self.control_dim = X.shape[1] - Y.shape[1]
         self.horizon = horizon
@@ -73,10 +80,12 @@ class PILCO(torch.nn.Module):
                 ], lr=5e-1)
 
         start = time.time()
-        m = torch.tensor(self.m_init).float().cuda()
-        s = torch.tensor(self.S_init).float().cuda()
-        current_reward = self.compute_reward()
-        current_params = self.controller.state_dict()
+        # m = torch.tensor(self.m_init).float().cuda()
+        # s = torch.tensor(self.S_init).float().cuda()
+        m = self.m_init.clone().detach().float().cuda()
+        s = self.S_init.clone().detach().float().cuda()
+        # current_reward = self.compute_reward()
+        # current_params = self.controller.state_dict()
         reward = torch.zeros(1).float().cuda()
         for i in range(maxiter):
             self.optimizer.zero_grad()
@@ -113,6 +122,11 @@ class PILCO(torch.nn.Module):
         # s_x = torch.tensor(s_x)
         m_u, s_u, c_xu = self.controller.compute_action(m_x, s_x)
 
+        # 确保 m_x 和 m_u 的批次维度一致
+        if m_x.dim() == 1:
+            m_x = m_x.unsqueeze(0)
+        if m_u.dim() == 1:
+            m_u = m_u.unsqueeze(0)
         # m_u = torch.tensor(m_u)
         # s_u = torch.tensor(s_u)
         # c_xu = torch.tensor(c_xu)
@@ -139,3 +153,9 @@ class PILCO(torch.nn.Module):
 
     def compute_reward(self):
         return self.predict(self.m_init,self.S_init,self.horizon)[2]
+
+    def save_model(self, str):
+        torch.save(self.controller.state_dict(), str)
+
+    def load_model(self, str):
+        self.controller.load_state_dict(torch.load(str))

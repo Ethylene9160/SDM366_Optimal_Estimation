@@ -189,6 +189,7 @@ cython_debug/
 
 #local
 local/
+PILCO_MASTER/
 
 #assignment with current index should not be sumbit
 current_ass/
@@ -202,3 +203,4 @@ assignments/finpro/RL_train_swing_pendulum/outputs/
 assignments/finpro/RL_train_swing_pendulum/outputs*/
 
 *.h
+*.eps

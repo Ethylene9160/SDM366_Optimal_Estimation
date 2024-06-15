@@ -12,8 +12,9 @@ from gpytorch.likelihoods import GaussianLikelihood, MultitaskGaussianLikelihood
 from torch.distributions import Normal
 from gpytorch.settings import cholesky_jitter
 import torch
+# torch.autograd.set_detect_anomaly(True)
 
-def current_reward(state, xlim=0.85):
+def current_reward(state, xlim=0.95):
     '''
     state[0]: x
     state[1]: theta1
@@ -22,8 +23,16 @@ def current_reward(state, xlim=0.85):
     state[4]: dtheta1
     state[5]: dtheta2
     '''
-    y = 0.6*np.cos(state[1]) + 0.6*np.cos(state[1]+state[2])
-    return y
+    # y = 0.6*np.cos(state[1]) + 0.6*np.cos(state[1]+state[2])
+    # return y
+    # t2 = state[1] + state[2]
+    # r = 5*np.cos(state[1]+np.cos(t2))-state[1]**2 - (t2)**2 - 0.01*state[0]**2 - 0.001*state[5]**2 - 0.0003*state[4]**2
+    # if abs(state[0]) > xlim:
+    #     r -= 10.0
+    # if state[0] > 1.0:
+    #     r += 10.0
+    r=-1
+    return r
 
 
 class PolicyNetwork(nn.Module):
@@ -48,6 +57,14 @@ class MultitaskGPModel(ExactGP):
         super(MultitaskGPModel, self).__init__(train_x, train_y, likelihood)
         self.mean_module = ConstantMean()
         self.covar_module = RBFKernel()
+        # self.covar_module = gpytorch.kernels.ScaleKernel(
+        #     gpytorch.kernels.RBFKernel(ard_num_dims=train_x.shape[2],
+        #                                # lengthscale_prior = gpytorch.priors.GammaPrior(1,10),
+        #                                batch_shape=torch.Size([self.num_out])),
+        #     batch_shape=torch.Size([self.num_out]),
+        #     outputscale_constraint=gpytorch.constraints.Interval(0.001, 0.001001),
+        #     # outputscale_prior = gpytorch.priors.GammaPrior(1.5,2),
+        # )
         self.task_covar_module = MultitaskKernel(self.covar_module, num_tasks=train_y.size(-1), rank=1)
 
     def forward(self, x):
@@ -56,7 +73,7 @@ class MultitaskGPModel(ExactGP):
         return MultitaskMultivariateNormal(mean_x, covar_x)
 
 class PILCOAgent:
-    def __init__(self, obs_space_dims, action_space_dims, lr=1e-3, gamma=0.95, batch_size=32, device='cpu'):
+    def __init__(self, obs_space_dims, action_space_dims, lr=1e-3, gamma=0.95, batch_size=1000, device='cpu'):
         self.policy_network = PolicyNetwork(obs_space_dims, action_space_dims).to(device)
         self.optimizer_policy = optim.Adam(self.policy_network.parameters(), lr=lr)
         self.gamma = gamma
@@ -72,6 +89,8 @@ class PILCOAgent:
         self.log_probs = []
         self.next_states = []
 
+        self.memo = 0
+
     def sample_action(self, state):
         state = torch.FloatTensor(state).to(self.device)
         mean, std = self.policy_network(state)
@@ -81,6 +100,10 @@ class PILCOAgent:
         return action.item(), log_prob
 
     def create_gp_model(self, train_x, train_y):
+        # 标准化训练数据
+        train_x, self.train_x_mean, self.train_x_std = standardize(train_x)
+        train_y, self.train_y_mean, self.train_y_std = standardize(train_y)
+
         if self.gp_model is None:
             self.train_x = train_x
             self.train_y = train_y
@@ -91,7 +114,13 @@ class PILCOAgent:
             self.train_y = train_y
             self.gp_model.set_train_data(inputs=self.train_x, targets=self.train_y, strict=False)
 
-    def train_gp_model(self, learning_rate=0.01, epochs=100):
+    def train_gp_model(self, train_x:list, train_y:list, learning_rate=0.001, epochs=50):
+        train_x = torch.FloatTensor(np.array(train_x)).to(self.device)
+        train_y = torch.FloatTensor(np.array(train_y)).to(self.device)
+        self.create_gp_model(train_x, train_y)
+        self._train_gp_model(learning_rate = learning_rate, epochs = epochs)
+
+    def _train_gp_model(self, learning_rate=0.004, epochs=80):
         self.gp_model.train()
         self.likelihood.train()
         optimizer = torch.optim.Adam(self.gp_model.parameters(), lr=learning_rate)
@@ -99,75 +128,88 @@ class PILCOAgent:
         for i in range(epochs):
             optimizer.zero_grad()
             output = self.gp_model(self.train_x)
-            print('shape of the output mean:', output.mean.shape)  # 应该是 (batch_size, 4)
-            print('shape of the train_y:', self.train_y.shape)  # 应该是 (batch_size, 4)
             loss = -mll(output, self.train_y)
             loss.backward()
+            torch.nn.utils.clip_grad_value_(self.gp_model.parameters(), 2.5)
             optimizer.step()
+            if loss.item()<-2.5:
+                break
+        print('loss: ', loss.item())
 
     def predict_next_state(self, states, actions):
         self.gp_model.eval()
         self.likelihood.eval()
         with torch.no_grad(), gpytorch.settings.fast_pred_var():
+            # 标准化输入数据
             state_action = torch.cat([states, actions], dim=-1).to(self.device)
+            state_action = (state_action - self.train_x_mean) / self.train_x_std
+
             observed_pred = self.likelihood(self.gp_model(state_action))
             mean = observed_pred.mean
+
+            # 解标准化预测结果
+            mean = unstandardize(mean, self.train_y_mean, self.train_y_std)
         return mean
 
-    def store_sample(self, state, action, reward, log_prob, next_state):
+    def store_transition(self, state, action, reward, log_prob, next_state):
         self.states.append(state)
         self.actions.append(action)
         self.rewards.append(reward)
         self.log_probs.append(log_prob)
         self.next_states.append(next_state)
+        self.memo += 1
+        if self.memo == self.batch_size:
+            self.update()
 
     def update(self):
-        if len(self.states) >= self.batch_size:
-            discounted_rewards = []
-            cumulative_reward = 0
-            for reward in reversed(self.rewards[-self.batch_size:]):
-                cumulative_reward = reward + self.gamma * cumulative_reward
-                discounted_rewards.insert(0, cumulative_reward)
-            discounted_rewards = torch.FloatTensor(discounted_rewards).unsqueeze(1).to(self.device)  # 确保 discounted_rewards 的形状为 [batch_size, 1]
+        if self.memo == 0:
+            return
+        self.memo = 0
+        discounted_rewards = []
+        cumulative_reward = 0
+        for reward in reversed(self.rewards):
+            cumulative_reward = reward + self.gamma * cumulative_reward
+            discounted_rewards.insert(0, cumulative_reward)
+        discounted_rewards = torch.FloatTensor(discounted_rewards).unsqueeze(1).to(self.device)  # 确保 discounted_rewards 的形状为 [batch_size, 1]
 
-            log_probs = torch.stack(self.log_probs[-self.batch_size:]).to(self.device)
-            states = torch.FloatTensor(np.array(self.states[-self.batch_size:])).to(self.device)
-            actions = torch.FloatTensor(np.array(self.actions[-self.batch_size:])).unsqueeze(1).to(self.device)  # 确保 actions 维度正确
-            next_states = torch.FloatTensor(np.array(self.next_states[-self.batch_size:])).to(self.device)
+        log_probs = torch.stack(self.log_probs).to(self.device)
+        states = torch.FloatTensor(np.array(self.states)).to(self.device)
+        actions = torch.FloatTensor(np.array(self.actions)).unsqueeze(1).to(self.device)  # 确保 actions 维度正确
+        next_states = torch.FloatTensor(np.array(self.next_states)).to(self.device)
 
-            # 预测状态差值 delta_states
-            delta_states = next_states - states  # delta_states 的维度应该是 (batch_size, 6)
+        # 预测状态差值 delta_states
+        delta_states = next_states - states  # delta_states 的维度应该是 (batch_size, 6)
 
-            # 确保 train_x 和 train_y 维度匹配
-            train_x = torch.cat([states, actions], dim=-1)  # train_x 的维度是 (batch_size, 7)
-            train_y = delta_states  # 预测 delta_states，维度是 (batch_size, 6)
+        # 确保 train_x 和 train_y 维度匹配
+        train_x = torch.cat([states, actions], dim=-1)  # train_x 的维度是 (batch_size, 7)
+        train_y = delta_states  # 预测 delta_states，维度是 (batch_size, 6)
 
-            self.create_gp_model(train_x, train_y)
-            self.train_gp_model()
+        self.create_gp_model(train_x, train_y)
+        self._train_gp_model()
 
-            predicted_deltas = self.predict_next_state(states, actions).squeeze()
-            predicted_next_states = states + predicted_deltas
+        predicted_deltas = self.predict_next_state(states, actions).squeeze()
+        predicted_next_states = states + predicted_deltas
 
-            # 使用 current_reward 函数计算 predicted_next_states 的奖励
-            predicted_rewards = torch.FloatTensor([current_reward(state) for state in predicted_next_states]).to(self.device)
+        # 使用 current_reward 函数计算 predicted_next_states 的奖励
+        predicted_rewards = torch.FloatTensor([current_reward(state) for state in predicted_next_states]).to(self.device)
 
-            # 计算每个时间步的折扣因子
-            discount_factors = torch.FloatTensor([self.gamma ** t for t in range(len(self.rewards[-self.batch_size:]))]).unsqueeze(1).to(self.device)
+        # 计算每个时间步的折扣因子
+        discount_factors = torch.FloatTensor([self.gamma ** t for t in range(len(self.rewards))]).unsqueeze(1).to(self.device)
 
-            advantages = discounted_rewards - (predicted_rewards.unsqueeze(1) * discount_factors)  # 确保 predicted_rewards 的形状为 [batch_size, 1]
+        advantages = discounted_rewards - (predicted_rewards.unsqueeze(1) * discount_factors)  # 确保 predicted_rewards 的形状为 [batch_size, 1]
 
-            # 更新策略网络
-            policy_loss = -torch.sum(log_probs * advantages.detach())
-            self.optimizer_policy.zero_grad()
-            policy_loss.backward()
-            self.optimizer_policy.step()
+        self.optimizer_policy.zero_grad()
+        # 更新策略网络
+        policy_loss = -torch.sum(log_probs * advantages.detach())
+        policy_loss.backward()
+        self.optimizer_policy.step()
 
-            # 清除已使用的样本
-            self.states = self.states[-self.batch_size:]
-            self.actions = self.actions[-self.batch_size:]
-            self.rewards = self.rewards[-self.batch_size:]
-            self.log_probs = self.log_probs[-self.batch_size:]
-            self.next_states = self.next_states[-self.batch_size:]
+        # 清除已使用的样本
+        self.states = []
+        self.actions = []
+        self.rewards = []
+        self.log_probs = []
+        self.next_states = []
 
 
     def save_model(self, path: str):
@@ -191,10 +233,12 @@ class PILCOAgent:
         self.gp_model.train() if self.gp_model else None
         print(f"successfully load model from {path}.")
 
-def preprocess_data(data):
-    mean = np.mean(data, axis=0)
-    std = np.std(data, axis=0)
-    return (data - mean) / (std + 1e-8), mean, std
+def standardize(data):
+    mean = data.mean(dim=0, keepdim=True)
+    std = data.std(dim=0, keepdim=True) + 1e-8  # 加上一个小值防止除以0
+    standardized_data = (data - mean) / std
+    return standardized_data, mean, std
 
-def denormalize_data(data, mean, std):
+def unstandardize(data, mean, std):
     return data * std + mean
+
