@@ -159,8 +159,6 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
-*.png
-
 # ppt files
 *.ppt
 *.pptx
@@ -168,6 +166,7 @@ cython_debug/
 # pdf files
 *.pdf
 !readme.pdf
+!SDM366_Final_Report.pdf
 
 # excel files
 *.xls
