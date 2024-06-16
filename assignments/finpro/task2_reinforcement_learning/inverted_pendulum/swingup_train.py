@@ -5,7 +5,7 @@ import numpy as np
 import gymnasium as gym
 import mujoco
 import tools
-from tools import current_reward
+
 import matplotlib.pyplot as plt
 
 
@@ -18,16 +18,29 @@ def show_rewards(rewards, folder_name):
     plt.savefig(f'{folder_name}/rewards.eps', format='eps')
     plt.show()
 
+def current_reward(state, xlim=0.85):
+    '''
+    state[0]: position of cart
+    state[1]: theta
+    state[2]: v of the cart
+    state[3]: omega
+    '''
+    reward =-1.8 * state[1] ** 2 -  0.002 * state[3] ** 2 - 0.2* state[0] ** 2
+    if abs(state[0]) > xlim:
+        reward = -20.0
+    elif abs(state[1]) < 0.20:
+        reward += 3.5
+    return reward
 
-
-
+train_mode = False # 调整是否进行训练。
 
 if __name__ == "__main__":
     xml_path = "inverted_swing_pendulum.xml"
     current_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
     current_time = f'ddpg_{current_time}'
     model, data = tools.init_mujoco(xml_path)
-    os.makedirs(f"{current_time}", exist_ok=True)
+    if train_mode:
+        os.makedirs(f"{current_time}", exist_ok=True)
 
     obs_space_dims = 4  # 修改为 4 个状态变量
     action_space_dims = model.nu
@@ -68,38 +81,34 @@ if __name__ == "__main__":
             while not done:
                 step_start = time.time()
                 action, _ = agent.sample_action(state)
-                # action = action[0]
                 data.ctrl[0] = action[0]
                 mujoco.mj_step(model, data)
                 next_state = tools.get_obs(data)
 
-                # 使用提供的 current_reward 函数计算奖励
                 reward = current_reward(next_state)
 
                 done = data.time > t_limit
                 agent.store_transition(state, action, reward, next_state)
                 rewards.append(reward)
-                # log_probs.append(log_prob)
-                # states.append(state)
-                # actions.append(action)
-                # next_states.append(next_state)
                 state = next_state
 
             total_rewards.append(np.sum(np.array(rewards)))
-            for s, a, r, s_ in zip(states[:-1], actions, rewards, states[1:]):
-                agent.store_transition(s, a, r, s_)
+            if train_mode:
+                for s, a, r, s_ in zip(states[:-1], actions, rewards, states[1:]):
+                    agent.store_transition(s, a, r, s_)
             # agent.update(rewards, log_probs, states, actions, next_states)
             episode += 1
 
-            if episode % auto_save_epochs == 0:
+            if episode % auto_save_epochs == 0 and train_mode:
                 agent.save_model(f"{current_time}/temp_model_save_at_epoch_{episode}.pth")
-
-        agent.save_model(f"{current_time}/{save_model_path}")
+        if train_mode:
+            agent.save_model(f"{current_time}/{save_model_path}")
         if total_rewards:
             show_rewards(total_rewards, current_time)
 
     except (KeyboardInterrupt, ValueError) as e:
-        agent.save_model(f"{current_time}/autosave.pth")
+        if train_mode:
+            agent.save_model(f"{current_time}/autosave.pth")
         if total_rewards:
             show_rewards(total_rewards, current_time)
         print("Training interrupted. Model saved.")
