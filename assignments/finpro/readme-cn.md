@@ -1,10 +1,30 @@
 # requirements：
 
-todo.
+见`requirements.txt`
 
 # Task1-biped
 
 文件处于目录`task1_state_estimation`下。这一节的描述中，若没有特殊说明，我们都假设您在该文件目录下。
+
+我们提供了三个代码文件。
+
+`biped_robot_sim.py`：使用DH表对二足机器人进行的状态估计。改代码经过屎山堆砌之后，我们也不知道为什么不能运行了2333，相信我们它以前真能走。
+
+`biped_robot_sim_r.py`：能够正常运行的二足机器人。观测方差较大（R远大于Q），即这个代码里我们更倾向于使用IMU。
+
+`biped_robot_sim_rec.py`：能够正常运行的二足机器人。观测方差较小（R近似于Q）。这个代码更倾向于使用机器人运动学进行计算的通过机器人足部关节运动规律计算得到的机器人线速度。
+
+* 演示
+
+不管使用大观测方差（R远大于Q，倾向于使用IMU）或者小观测方差（R较小，近似于Q，倾向于使用机器人运动学进行线速度估算），机器人都能正常行走。二者的仿真结果存在轻微差异。详细参考演示视频。
+
+这里我们提供一组小观测误差（R矩阵值小，近似于Q）下的演示，分别是x方向速度误差和机器人运动的部分视频。
+
+![biped2](task1_state_estimaiton/estimation2.png)
+
+![biped-show](task1_state_estimaiton/showing.gif)
+
+
 
 # Task2 - RL
 
@@ -49,5 +69,19 @@ agent = tools.A2CAgent(obs_space_dims, action_space_dims, lr=0.000, gamma=0.99, 
 ### 稳摆
 
 在`inverted_douoble_pendulum`中，我们提供了`idp_training.py`和`idp_showing.py`文件。前者用于训练二阶摆，后者用于显示二阶摆。
+
+* 演示
+
+
+
+
+
+![inverted_double_pendulum_stable](task2_reinforcement_learning/videos/inverted_double_pendulum_stable.gif)
+
+### 起摆
+
+* 演示
+
+todo
 
 最后，祝助教哥哥**天天开心, GPA+++++,PAPER全中一区，老板评上院士**！
