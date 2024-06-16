@@ -69,10 +69,10 @@ class CustomEnv(gym.Env):
         # Accumulate the reward
         self.episode_reward += reward
 
-        done = bool(self.data.time > self.max_time)
+        done = bool(self.data.time > self.max_time) or is_stable(self.data)
         truncated = bool(self.data.time > self.max_time)
-        # if done:
-        #     print(f"Episode ended at time {self.data.time}, x = {state[0]}", reward)
+        if done and not is_stable(self.data):
+            reward -= 100.0
         return state, reward, done, truncated, {}
 
     def reset(self, seed=None):

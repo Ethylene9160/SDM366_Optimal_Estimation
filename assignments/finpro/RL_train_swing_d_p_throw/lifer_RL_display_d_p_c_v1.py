@@ -59,11 +59,16 @@ def video_record(mujoco_model, mujoco_data, video_writer):
 
 
 def is_stable(data):
-    if abs(data.qpos[1]) < 0.2 and \
-            abs(data.qpos[2]) < 0.2 and \
-            abs(data.qvel[0]) < 0.5 and \
-            abs(data.qvel[1]) < 1.0 and \
-            abs(data.qvel[2]) < 1.0:
+    state = tools.get_obs_lifer(data)
+    x, theta1, theta2, v, omega1, omega2, sin_theta1, sin_theta2, cos_theta1, cos_theta2 = state
+    theta1 = np.arctan2(sin_theta1, cos_theta1)
+    theta2 = np.arctan2(sin_theta2, cos_theta2)
+    # print(f"x: {x}, theta1: {theta1}, theta2: {theta2}, v: {v}, omega1: {omega1}, omega2: {omega2}")
+    if abs(theta1) < 0.5 and \
+            abs(theta2) < 0.5 and \
+            abs(v) < 1.0 and \
+            abs(omega1) < 3.0 and \
+            abs(omega2) < 3.0:
         return True
     # return not is_unstable(data)
     return False
@@ -71,12 +76,12 @@ def is_stable(data):
 
 def is_unstable(data):
     _, _, z = data.site_xpos[0]
-    return z < 0.8
+    return z < 0.5
 
 
 if __name__ == "__main__":
     xml_path = "inverted_double_pendulum.xml"
-    throw_path = "models/v1/temp_1718442370_steps_501760.pth"
+    throw_path = "models/v1/temp_1718446981_steps_2000896.pth"
     catch_path = "models/ethy/ethy_official_double_stable.pth"
 
     model, data = tools.init_mujoco(xml_path)
@@ -93,11 +98,11 @@ if __name__ == "__main__":
             agent_catch = tools.A2C.A2CAgent(obs_space_dims, action_space_dims)
             agent_catch.load_model(catch_path)
 
-            total_num_episodes = int(3)
+            total_num_episodes = int(9)
 
             for episode in range(total_num_episodes):
                 if_random_seed = 1
-                seed = random.randint(0, 100000) if if_random_seed else 94453
+                seed = random.randint(0, 100000) if if_random_seed else 86033
                 print(f'The seed is: {seed}')
 
                 done = False
@@ -127,7 +132,7 @@ if __name__ == "__main__":
 
                     mujoco.mj_step(model, data)
 
-                    done = data.time > 30
+                    done = data.time > 300
                     render(window, model, data)
 
                     # time.sleep(1)
