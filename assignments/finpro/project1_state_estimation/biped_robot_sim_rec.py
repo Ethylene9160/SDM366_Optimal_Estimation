@@ -21,6 +21,7 @@ import numpy as np
 import quaternion
 import mujoco
 import mujoco.viewer
+from matplotlib import pyplot as plt
 from scipy.spatial.transform import Rotation as Rot
 import torch
 import os
@@ -53,6 +54,26 @@ R_POSITION_ERROR = 0.001
 R_VELOCITY_ERROR = 0.1
 R_FOOT_ERROR = 0.001
 
+def plot(vx, tx):
+    plt.figure(figsize=(8,8))
+    plt.subplot(2,1,1)
+    plt.plot(vx[2000:])
+    plt.plot(tx[2000:])
+    plt.title('Comparasion for the estimated velocity')
+    # plt.xlabel('timestep')
+    plt.ylabel('velocity')
+    plt.legend(['true', 'estimate'])
+    plt.subplot(2,1,2)
+    plt.plot((tx-vx)[2000:])
+    plt.title('error of the x')
+    plt.xlabel('timestep')
+    plt.ylabel('velocity difference')
+    plt.legend(['error'])
+    plt.savefig('estimation1.png', format='png')
+    plt.show()
+
+vx = []
+tx = []
 
 class MuJoCoSim:
     """Main class for setting up and running the MuJoCo simulation."""
@@ -97,6 +118,8 @@ class MuJoCoSim:
         self.lastBPL = np.zeros(3)
         self.lastBPR = np.zeros(3)
         self.x = np.array([0, 0, 0.625, 0, 0, 0, -0.0696, 0.095, 0, -0.0696, -0.095, 0]).T
+        # self.x[3:6] = self.data.qvel[:3].copy()
+        # self.x[:3] = self.data.qpos[:3].copy()
         self.P = np.eye(12) * 0.01
         self.EKF_Q = np.eye(12)
         self.EKF_Q[:3, :3] = np.eye(3) * Q_POSITION_ERROR
@@ -224,7 +247,7 @@ class MuJoCoSim:
         z, rotation_ob = z2x_Obserbation(BPL, BPR, BVL, BVR, ang_vel.data, quat, contact_info, self.x[:3], self.x[3:6])
         # 加速度从自身坐标系变换到世界坐标系
         a = rotation_ob @ lin_acc.data + np.array([0, 0, -9.81])
-        self.x, self.P = z2x_EKF(self.x, z, self.P, a, self.EKF_Q, self.EKF_R, contact_info)
+        self.x, self.P = z2x_EKF(self.x, z, self.P, a, self.EKF_Q, self.EKF_R, contact_info, self.data.time)
         self.lastBPL, self.lastBPR = BPL, BPR
         print('[debug] 机器人全局测量位置', self.x[:3])
         print(['[debug] 机器人全局真实位置', self.data.qpos[:3]])
@@ -233,10 +256,14 @@ class MuJoCoSim:
         if USE_SIM:
             return self.data.qvel[:3]
         else:
+            vx.append(self.x[3])
+            tx.append(self.data.qvel[0])
+            if(len(vx) == 5000):
+                plot(np.array(vx), np.array(tx))
             return self.x[3:6]  # TODO: implement your codes to estimate base linear velocity
 
-
-def z2x_EKF(x, z, P, u, Q, R, contact_info):
+R_max = 1e8*np.eye(14)
+def z2x_EKF(x, z, P, u, Q, R, contact_info, timestamp):
     # R 是测量协方差， Q是过程预测协方差，当处于摆动状态时，需要增大Q的方差，告诉模型现在过程不准
     ########### PREDICT ##########
     A = np.eye(12)
@@ -274,6 +301,8 @@ def z2x_EKF(x, z, P, u, Q, R, contact_info):
     # 取消足部纵坐标观测。
     # R[12, 12] = 100.0
     # R[13, 13] = 100.0
+    # if timestamp < 2:
+    #     R = R_max
     if np.linalg.det(P[0:2, 0:2]) > 1e-6:
         P[0:2, 2:12] = 0
         P[2:12, 0:2] = 0
