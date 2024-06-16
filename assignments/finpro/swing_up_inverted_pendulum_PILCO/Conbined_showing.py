@@ -61,7 +61,7 @@ if __name__ == "__main__":
     # agent = tools.A2CAgent(obs_space_dims, action_space_dims, lr=0.000, gamma=0.99)
     # agent.load_model(model_path)
     agent = swing_agent
-    total_num_episodes = int(10)  # training epochs
+    total_num_episodes = int(1)  # training epochs
     with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
         episode = 0
         while viewer.is_running() and episode < total_num_episodes:
@@ -114,6 +114,6 @@ if __name__ == "__main__":
                 i += 1
                 # if i % 100 == 0:
                 #     print(f'state: {state}, action: {action}, next_state: {next_state}')
-                done = data.time > 6 #and (not stable_state) # Example condition to end episode
+                done = data.time > 45 #and (not stable_state) # Example condition to end episode
                 # state = next_state
             episode += 1

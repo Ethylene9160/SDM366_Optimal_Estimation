@@ -68,7 +68,9 @@ def is_stable(data):
     abs(omega) < 1.8
     Then it will be stable.
     '''
-    if abs(data.qpos[1]) < 0.4 and abs(data.qvel[0]) < 2.5 and abs(data.qvel[1]) <2.5:
+    if (abs(data.qpos[1]) < 0.45 and
+            abs(data.qvel[0]) < 2.5 and
+            abs(data.qvel[1]) <2.5):
         return True
     return False
 
@@ -92,7 +94,7 @@ if __name__ == "__main__":
         print('nu: ', model.nu)
         print('state: ', data.qpos.shape[0])
         action_space = [-15.0, -5.0, -1.2, -0.4, 0, 0.4, 1.2, 5.0, 15.0]
-        swing_agent = tools.DDPGAgent(4, 1)
+        swing_agent = tools.DDPGAgent(4, 1, device = 'cuda')
         swing_agent.load_model(swing_model_path)
         stable_agent = tools.A2CAgent(obs_space_dims, action_space_dims, lr=0.000, gamma=0.99)
         stable_agent.load_model(stable_model_path)
@@ -102,7 +104,7 @@ if __name__ == "__main__":
         total_num_episodes = int(10) # training epochs
         time_records = []
         for episode in range(total_num_episodes):
-            # video_writer = cv2.VideoWriter(f'vedio_for_{episode}th.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 30,(600, 480))
+            video_writer = cv2.VideoWriter(f'vedio_for_{episode}th.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 50,(600, 480))
             rewards = []
             log_probs = []
             states = []
@@ -114,10 +116,6 @@ if __name__ == "__main__":
             # 重置环境到初始状态
             mujoco.mj_resetData(model, data)
             data.qpos[1] = -np.pi
-            # data.qpos[1] += np.random.uniform(-0.5,0.5)
-            # data.qpos[0] = np.random.uniform(-0.2,0.2)
-            # data.qvel[0] = np.random.uniform(-0.25,0.25)
-            # data.qvel[1] = np.random.uniform(-0.2,0.2)
             state = tools.get_obs(data)
             while not done:
                 step_start = time.time()
@@ -139,13 +137,13 @@ if __name__ == "__main__":
                         print('swing')
 
                 done = data.time > 10   # Example condition to end episode
-                # video_record(model, data, video_writer) # uncommit this to make vedio
+                video_record(model, data, video_writer) # uncommit this to make vedio
                 render(window, model, data) # commit this line to speed up the training
             # log_probs.append(log_prob)
             # agent.update(rewards, log_probs, states)
             time_records.append(data.time)
             print(f'lasted for {data.time:.2f} seconds')
-            # video_writer.release()
+            video_writer.release()
         print(f'max lasted {np.max(np.array(time_records)):.2f}s')
         print(f'avg lasted {np.mean(np.array(time_records)):.2f}s')
 

@@ -11,7 +11,7 @@ import mujoco.viewer
 
 from . import DDPG
 
-from .DDPG import DDPGAgent
+from .DDPG import DDPGAgent_Torch as DDPGAgent
 from .A2C import A2CAgent
 from .Q import QLearningAgent
 from .DQN import DQNAgent

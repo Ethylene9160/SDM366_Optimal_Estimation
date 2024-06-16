@@ -72,7 +72,7 @@ if __name__ == "__main__":
         total_num_episodes = int(10) # training epochs
         time_records = []
         for episode in range(total_num_episodes):
-            # video_writer = cv2.VideoWriter(f'vedio_for_{episode}th.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 30, (600, 480))
+            # video_writer = cv2.VideoWriter(f'vedio_for_{episode}th.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 100, (600, 480))
             rewards = []
             log_probs = []
             states = []
@@ -101,7 +101,7 @@ if __name__ == "__main__":
                 # rewards.append(reward)
                 # log_probs.append(log_prob)
                 # states.append(state.copy())
-                done = data.time > 450 or y < 1.0  # Example condition to end episode
+                done = data.time > 20 or y < 0.9  # Example condition to end episode
                 # video_record(model, data, video_writer) # uncommit this to make vedio
                 render(window, model, data) # commit this line to speed up the training
             # log_probs.append(log_prob)
