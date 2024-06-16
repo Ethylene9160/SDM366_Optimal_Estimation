@@ -32,8 +32,8 @@ if __name__ == "__main__":
     obs_space_dims = 4  # 修改为 4 个状态变量
     action_space_dims = model.nu
     agent = tools.PILCOAgent(obs_space_dims, action_space_dims, lr=1e-3, gamma=0.98)
-    agent = tools.DDPGAgent(obs_space_dims, action_space_dims, lr_a=5e-4, lr_c=5e-4, gamma=0.99, alpha=0.02)
-    read_model_path = "ddpg_2024-06-14-01-40-48/temp_model_save_at_epoch_40.pth"
+    agent = tools.DDPGAgent(obs_space_dims, action_space_dims, lr_a=8e-5, lr_c=8e-5, gamma=0.99, alpha=0.02)
+    read_model_path = "ddpg_2024-06-14-15-34-28/swing_up.pth"
     save_model_path = "swing_up.pth"
 
     try:
@@ -41,14 +41,14 @@ if __name__ == "__main__":
     except FileNotFoundError:
         print(f"No saved model found at {read_model_path}. Starting from scratch.")
 
-    auto_save_epochs = 20
+    auto_save_epochs = 120
     total_rewards = []
     episode = 0
     t_limit = 12.0
     step_count = 0
 
     try:
-        total_num_episodes = int(119)
+        total_num_episodes = int(899)
         update_target_network_steps = 1000
 
         while episode < total_num_episodes:

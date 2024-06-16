@@ -50,7 +50,7 @@ if __name__ == "__main__":
     agent = tools.DDPGAgent(obs_space_dims, 1,device='cuda')
     agent = tools.A2CAgent(obs_space_dims, 1, device = 'cuda')
     # agent = tools.PILCOAgent(obs_space_dims, 1,device='cuda')
-    read_model_path = "swing_pilco_2024-06-15-02-05-27/"
+    read_model_path = "swing_2024-06-15-17-55-25/temp_model_save_at_epoch_750.pth"
     # save_model_path = "swing_up.pth"
     try:
         agent.load_model(read_model_path)

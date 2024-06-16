@@ -25,13 +25,13 @@ def current_reward(state, xlim=0.95):
     '''
     # y = 0.6*np.cos(state[1]) + 0.6*np.cos(state[1]+state[2])
     # return y
-    # t2 = state[1] + state[2]
-    # r = 5*np.cos(state[1]+np.cos(t2))-state[1]**2 - (t2)**2 - 0.01*state[0]**2 - 0.001*state[5]**2 - 0.0003*state[4]**2
+    t2 = state[1] + state[2]
+    r = 5*np.cos(state[1]+np.cos(t2))-state[1]**2 - (t2)**2 - 0.01*state[0]**2 - 0.001*state[5]**2 - 0.0003*state[4]**2
     # if abs(state[0]) > xlim:
     #     r -= 10.0
     # if state[0] > 1.0:
     #     r += 10.0
-    r=-1
+    # r=-1
     return r
 
 

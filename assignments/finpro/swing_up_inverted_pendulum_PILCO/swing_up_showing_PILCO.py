@@ -34,7 +34,7 @@ if __name__ == "__main__":
     action_space_dims = model.nu
     agent = tools.PILCOAgent(obs_space_dims, action_space_dims, lr = 1e-3, gamma=0.98)
     agent = tools.DDPGAgent(obs_space_dims, 1)
-    read_model_path = "ddpg_2024-06-14-00-39-20/autosave.pth"
+    read_model_path = "ddpg_2024-06-14-15-54-31/temp_model_save_at_epoch_480.pth"
     # save_model_path = "swing_up.pth"
     try:
         agent.load_model(read_model_path)

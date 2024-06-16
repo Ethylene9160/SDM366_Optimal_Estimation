@@ -72,12 +72,13 @@ if __name__ == "__main__":
         total_num_episodes = int(10) # training epochs
         time_records = []
         for episode in range(total_num_episodes):
-            # video_writer = cv2.VideoWriter(f'vedio_for_{episode}th.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 30,(600, 480))
+            # video_writer = cv2.VideoWriter(f'vedio_for_inverted_{episode}th.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 50,(600, 480))
             rewards = []
             log_probs = []
             states = []
             done = False
             data.time = 0
+            print('timestep: ')
             print('The episode is:', episode)
             # 重置环境到初始状态
             mujoco.mj_resetData(model, data)
@@ -96,9 +97,9 @@ if __name__ == "__main__":
                 # rewards.append(reward)
                 # log_probs.append(log_prob)
                 # states.append(state.copy())
-                done = data.time > 250 or abs(data.qpos[1]) > 0.2    # Example condition to end episode
+                done = data.time > 900 or abs(data.qpos[1]) > 0.2    # Example condition to end episode
                 # video_record(model, data, video_writer) # uncommit this to make vedio
-                render(window, model, data) # commit this line to speed up the training
+                # render(window, model, data) # commit this line to speed up the training
             # log_probs.append(log_prob)
             # agent.update(rewards, log_probs, states)
             time_records.append(data.time)

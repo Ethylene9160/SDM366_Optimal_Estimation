@@ -35,7 +35,7 @@ if __name__ == "__main__":
     action_space_dims = model.nu
     # agent = tools.DDPGAgent(obs_space_dims, action_space_dims, lr_a=4e-5, lr_c=4e-5, gamma=0.99, alpha=0.02, device='cuda')
     agent = tools.A2CAgent(obs_space_dims, action_space_dims, lr=1e-4, gamma=0.99, device='cuda')
-    read_model_path = "swing_2024-06-15-13-38-33/temp_model_save_at_epoch_1000.pth"
+    read_model_path = "swing_2024-06-15-14-43-30/swing_up.pth"
     save_model_path = "swing_up.pth"
 
     try:
@@ -43,10 +43,10 @@ if __name__ == "__main__":
     except FileNotFoundError:
         print(f"No saved model found at {read_model_path}. Starting from scratch.")
 
-    auto_save_epochs = 100
+    auto_save_epochs = 250
     total_rewards = []
     episode = 0
-    t_limit = 20.0
+    t_limit = 12.0
     step_count = 0
 
     try:
@@ -87,7 +87,7 @@ if __name__ == "__main__":
                 reward = tools.current_reward(next_state)
                 # print(reward)
 
-                done = data.time > t_limit or y > 1.05
+                done = data.time > t_limit
                 # agent.store_transition(state, action, reward, next_state)
                 states.append(state)
                 new_states.append(next_state)
