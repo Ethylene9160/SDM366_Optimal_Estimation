@@ -40,6 +40,22 @@ agent = tools.A2CAgent(obs_space_dims, action_space_dims, lr=0.000, gamma=0.99, 
 
 将`device = 'cuda'`更改为`device = 'cpu'`就能解决没有GPU带来的问题。
 
+* 模型简介
+
+我们基于pytorch，手动实现了：
+
+> Q Learning
+>
+> DQN
+>
+> A2C
+>
+> DDPG
+>
+> PILCO
+
+在`agents`包中。里面包含了一些详细的参数和函数的注释。
+
 ## 一阶倒立摆
 
 ### 稳摆
@@ -80,8 +96,17 @@ agent = tools.A2CAgent(obs_space_dims, action_space_dims, lr=0.000, gamma=0.99, 
 
 ### 起摆
 
-* 演示
+返回`finpro`文件夹，`RL_train_swing_d_p_throw`、`stable_inverted_double_state2`、`stable_inverted_double_state3`是我们对起摆的一些尝试。
 
-todo
+## 其它
+
+我们在两个倒立摆模型中的`tools`包下，将：
+
+```python
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
+sys.path.append(project_root)
+```
+
+即文件夹`task2_reinforcement_learning`设置为了相对工作空间。因此在您的`tools/__init__.py`中，出现的有关于`util`和`agents`的导入爆红，请忽略。
 
 最后，祝助教哥哥**天天开心, GPA+++++,PAPER全中一区，老板评上院士**！

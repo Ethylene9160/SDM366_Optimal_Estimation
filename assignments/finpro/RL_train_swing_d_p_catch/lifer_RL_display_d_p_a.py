@@ -53,7 +53,7 @@ def video_record(mujoco_model, mujoco_data, video_writer):
         video_writer.write(buffer)
 
 if __name__ == "__main__":
-    xml_path = "inverted_swing_pendulum.xml"
+    xml_path = "inverted_double_pendulum.xml"
     model_path = "stable_2024-06-09-22-42-04/temp_model_save_at_epoch_2000.pth"
     # model_path = "models/ethy_official_stable1.ethy"
 

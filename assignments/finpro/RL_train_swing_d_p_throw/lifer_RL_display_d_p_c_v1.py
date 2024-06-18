@@ -14,7 +14,7 @@ import tools
 warnings.filterwarnings("ignore")
 
 
-def init_glfw(width=900, height=480):
+def init_glfw(width=450, height=240):
     if not glfw.init():
         return None
     window = glfw.create_window(width, height, "MuJoCo Simulation", None, None)
@@ -64,11 +64,11 @@ def is_stable(data):
     theta1 = np.arctan2(sin_theta1, cos_theta1)
     theta2 = np.arctan2(sin_theta2, cos_theta2)
     # print(f"x: {x}, theta1: {theta1}, theta2: {theta2}, v: {v}, omega1: {omega1}, omega2: {omega2}")
-    if abs(theta1) < 0.5 and \
-            abs(theta2) < 0.5 and \
+    if abs(theta1) < 0.4 and \
+            abs(theta2) < 0.4 and \
             abs(v) < 1.0 and \
-            abs(omega1) < 3.0 and \
-            abs(omega2) < 3.0:
+            abs(omega1) < 2.5 and \
+            abs(omega2) < 2.5:
         return True
     # return not is_unstable(data)
     return False
@@ -76,17 +76,17 @@ def is_stable(data):
 
 def is_unstable(data):
     _, _, z = data.site_xpos[0]
-    return z < 0.5
+    return z < 0.8
 
 
 if __name__ == "__main__":
     xml_path = "inverted_double_pendulum.xml"
-    throw_path = "models/v1/temp_1718446981_steps_2000896.pth"
-    catch_path = "models/ethy/ethy_official_double_stable.pth"
+    throw_path = "models/v1/temp_1718446981_steps_2000896.lifer"
+    catch_path = "models/ethy/ethy_official_double_stable.ethy"
 
     model, data = tools.init_mujoco(xml_path)
     window = init_glfw()
-
+    is_record = True
     if window:
         try:
             obs_space_dims = 10
@@ -100,6 +100,7 @@ if __name__ == "__main__":
 
             total_num_episodes = int(9)
 
+            isStable = False
             for episode in range(total_num_episodes):
                 if_random_seed = 1
                 seed = random.randint(0, 100000) if if_random_seed else 86033
@@ -111,19 +112,21 @@ if __name__ == "__main__":
 
                 mujoco.mj_resetData(model, data)
                 tools.random_state(data, seed)
-
-                isStable = False
+                # data.qpos[1] = -np.pi
+                video_writer = cv2.VideoWriter(f'vedio_for_{episode}th.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 50,
+                                               (450, 240))
 
                 while not done:
 
                     if isStable:
                         if is_unstable(data):
                             isStable = False
-                            print("Catch failed")
+                            print("Catch failed", data.time)
                     else:
                         if is_stable(data):
                             isStable = True
-                            print("Catching...")
+                            print("Catching...", data.time)
+
 
                     state = tools.get_obs_lifer(data) if not isStable else tools.get10obs(data)
 
@@ -132,11 +135,13 @@ if __name__ == "__main__":
 
                     mujoco.mj_step(model, data)
 
-                    done = data.time > 300
-                    render(window, model, data)
-
+                    done = data.time > 500
+                    # render(window, model, data)
+                    if is_record:
+                        video_record(model, data, video_writer)  # uncommit this to make vedio
+                    is_record = not is_record
                     # time.sleep(1)
-
+                video_writer.release()
         except KeyboardInterrupt:
             print('KeyboardInterrupt')
             glfw.destroy_window(window)
