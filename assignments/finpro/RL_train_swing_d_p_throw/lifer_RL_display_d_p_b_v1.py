@@ -62,7 +62,7 @@ def video_record(mujoco_model, mujoco_data, video_writer):
 
 if __name__ == "__main__":
     xml_path = "inverted_double_pendulum.xml"
-    model_path = "models/v1/temp_1718436337_steps_2000896.pth"
+    model_path = "models/v1/temp_1718436337_steps_2000896.lifer"
 
     model, data = tools.init_mujoco(xml_path)
     window = init_glfw()
