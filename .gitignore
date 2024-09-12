@@ -167,7 +167,7 @@ cython_debug/
 *.pdf
 !readme.pdf
 !SDM366_Final_Report.pdf
-
+!SDM366*.pdf
 # excel files
 *.xls
 *.xlsx
@@ -203,3 +203,14 @@ assignments/finpro/RL_train_swing_pendulum/outputs*/
 
 *.h
 *.eps
+*.mp4
+outputs/
+
+/assignments/finpro/RL_train*/
+/assignments/PILCO_MASTER/
+/assignments/finpro/swing_up*/
+/assignments/finpro/stable_inverted_double_state*/
+/assignments/finpro/state_estimation/
+/assignments/finpro/project1_state_estimation/
+
+
